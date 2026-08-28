@@ -474,6 +474,11 @@ def build_zones():
     CAT = {'K-POP': 'KPOP', 'ORIGINAL': 'ORIGINAL', 'WORLD MUSIC': 'WORLDMUSIC', 'XROSS': 'XROSS'}
     for r in lz:
         cat_song[r['카테고리']].append(r)
+    try:
+        import original_fill as _of
+        _of.main()
+    except Exception as _e:
+        print('   (채움 재생성 실패 — 옛 판을 쓴다: %s)' % _e)
     for name in ('K-POP', 'WORLD MUSIC', 'XROSS', 'CO-OP', 'ORIGINAL'):
         for tgt, t in menu_ev.get(name, []):
             ev[norm(name)].append((tgt, t))
@@ -485,11 +490,6 @@ def build_zones():
             zs.append({'name': name, 'size': 135, 'songs': [dict(zip(('n', 't', 'zone'), (c['위치'], c['곡'] + ('' if c['확신'] != '△' else ' (±1 미확정)'), 'x%s' % c['인원'] if c['인원'] else '')), **_seen_src(name, int(c['위치']), song_ev, song_ev_alt, song_ev_grade, sev)) for c in coop], 'ev': e, 'covered': bool(e), 'kind': '전용채널', 'note': '협동 채널 135칸 — 11:50~13:06 전체 순회로 판독 (미기재 위치 %d칸은 곡명 미판독)' % (135 - len(coop))})
             continue
         cread_by = {}
-        try:
-            import original_fill as _of
-            _of.main()
-        except Exception as _e:
-            print('   (채움 재생성 실패 — 옛 판을 쓴다: %s)' % _e)
         for c in rows('out/arcade_original_fill.csv'):
             cread_by.setdefault(c['채널'], {})[int(c['위치'])] = c['곡']
         for c in rows('out/arcade_category_reads.csv'):
