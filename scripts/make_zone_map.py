@@ -785,7 +785,7 @@ def main():
     _got = [k for k in re.findall('data-key="([^"]+)"', html) if k in set(_ser)]
     if _ser and _got != _ser:
         raise SystemExit('FAIL 시리즈존 순서가 정본과 다르다 · 정본 %s · 지도 %s' % (' → '.join(_ser), ' → '.join(_got)))
-    io.open(OUT, 'w', encoding='utf-8').write(html)
+    io.open(OUT, 'w', encoding='utf-8', newline='\n').write(html)
     print('존 %d · 근거 %d (%d%%) -> %s' % (ntot, ncov, round(100 * ncov / max(ntot, 1)), os.path.relpath(OUT, ROOT)))
     return 0
 if __name__ == '__main__':
