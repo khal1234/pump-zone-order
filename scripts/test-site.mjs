@@ -45,6 +45,8 @@ check("finder exposes only physical difficulty channels", exposedLevels.length =
 check("search results fold chart aliases into OVER labels", appSource.includes("function chartLabels") && appSource.includes("levelLabel(folds[chart] ?? chart, folds)"));
 check("typing from any tab opens search results", appSource.includes('if (value.trim()) setTab("search")'));
 check("song selection aligns viewport to search", appSource.includes('searchRef.current?.scrollIntoView({ block: "start"'));
+check("leaving song detail clears shared URL state", appSource.includes('url.searchParams.delete("song")') && appSource.includes('if (next !== "search") clearSongFromUrl()'));
+check("browser back restores search state", appSource.includes('history.pushState(null, "", `?song=${encodeURIComponent(title)}`)') && appSource.includes('window.addEventListener("popstate", restoreUrlState)'));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;

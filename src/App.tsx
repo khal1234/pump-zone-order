@@ -179,6 +179,20 @@ export default function App() {
     return () => window.removeEventListener("keydown", focusSearch);
   }, []);
 
+  useEffect(() => {
+    function restoreUrlState() {
+      const title = new URLSearchParams(location.search).get("song");
+      setSelectedTitle(title);
+      if (title) {
+        setQuery(title);
+        setTab("search");
+        setZone(null);
+      }
+    }
+    window.addEventListener("popstate", restoreUrlState);
+    return () => window.removeEventListener("popstate", restoreUrlState);
+  }, []);
+
   const titles = useMemo(() => contract?.songs.map((song) => song.title) ?? [], [contract]);
   const inverseAliases = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -197,6 +211,12 @@ export default function App() {
     }));
   }
 
+  function clearSongFromUrl() {
+    const url = new URL(location.href);
+    url.searchParams.delete("song");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
   function updateQuery(value: string) {
     setQuery(value);
     setSelectedTitle(null);
@@ -212,7 +232,7 @@ export default function App() {
     const next = [title, ...recent.filter((item) => item !== title)].slice(0, 12);
     setRecent(next);
     localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    history.replaceState(null, "", `?song=${encodeURIComponent(title)}`);
+    history.pushState(null, "", `?song=${encodeURIComponent(title)}`);
     scrollToSearch();
   }
 
@@ -227,6 +247,7 @@ export default function App() {
     setTab(next);
     setSelectedTitle(null);
     setZone(null);
+    if (next !== "search") clearSongFromUrl();
     if (next === "search") requestAnimationFrame(() => searchRef.current?.focus());
   }
 
@@ -262,7 +283,7 @@ export default function App() {
         </section>
 
         <section className="content" aria-live="polite">
-          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => setSelectedTitle(null)} />}
+          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} />}
           {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={setZone} onChoose={chooseTitle} />}
