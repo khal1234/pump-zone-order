@@ -18,14 +18,22 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
   { key: "onlyshort", label: "숏컷만", short: "숏컷만" },
 ];
 type CreditMode = "normal" | "premium";
-type ZoneGroupKey = "single" | "double" | "series" | "channel";
+type ZoneGroupKey = "single" | "double" | "series" | "category";
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
 
 function pos(set: PositionSet | undefined, filter: FilterKey): number | undefined {
   if (!set) return undefined;
+  if (filter === "onlyshort") return set.onlyshort;
   return set[filter] ?? set.all;
+}
+
+function channelAvailable(kind: string, filter: FilterKey): boolean {
+  if (kind === "숏컷") return true;
+  if (kind === "리믹스") return filter !== "nofullremix" && filter !== "onlyshort";
+  if (kind === "풀송") return filter === "all" || filter === "normal";
+  return filter !== "onlyshort";
 }
 
 function heartsToFilter(mode: CreditMode, hearts: number): FilterKey {
@@ -53,13 +61,25 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
     items.push({ id: `series:${series.zone}`, kind: "series", label: series.zone, sublabel: "시리즈존", position: seriesPosition, total: seriesTotal, listKey: series.zone });
   }
   const channel = nav.channel[title];
-  if (channel) {
+  if (channel && channelAvailable(channel.kind, filter)) {
     items.push({ id: `channel:${channel.kind}`, kind: "channel", label: `${channel.kind} 채널`, sublabel: "전용 채널", position: channel.pos, total: channel.total, listKey: channel.kind });
   }
-  for (const category of nav.cats[title] ?? []) {
-    items.push({ id: `category:${category.tile}`, kind: "category", label: category.tile, sublabel: "카테고리", position: category.pos, total: category.total, listKey: category.tile });
+  if (filter !== "onlyshort") {
+    for (const category of nav.cats[title] ?? []) {
+      items.push({ id: `category:${category.tile}`, kind: "category", label: category.tile, sublabel: "카테고리", position: category.pos, total: category.total, listKey: category.tile });
+    }
   }
   return items;
+}
+
+function categoryEntries(contract: PublicContract, key: string): Array<{ title: string; position: number; total: number }> {
+  const rows: Array<{ title: string; position: number; total: number }> = [];
+  for (const [title, categories] of Object.entries(contract.navIndex.cats)) {
+    for (const category of categories) {
+      if (category.tile === key) rows.push({ title, position: category.pos, total: category.total });
+    }
+  }
+  return rows.sort((a, b) => a.position - b.position);
 }
 
 function listFor(contract: PublicContract, location: LocationItem, filter: FilterKey): Array<{ title: string; position: number }> {
@@ -79,7 +99,7 @@ function listFor(contract: PublicContract, location: LocationItem, filter: Filte
   if (location.kind === "channel") {
     return (finder.channelSongs[location.listKey] ?? []).map((title, index) => ({ title, position: index + 1 }));
   }
-  return (finder.catSongs[location.listKey] ?? []).map((title, index) => ({ title, position: index + 1 }));
+  return categoryEntries(contract, location.listKey).map(({ title, position }) => ({ title, position }));
 }
 
 function confidenceClass(grade: string): "solid" | "estimated" | "unknown" {
@@ -370,25 +390,40 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   const [group, setGroup] = useState<ZoneGroupKey>("single");
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
+    const category = zone.kind === "category" ? categoryEntries(contract, zone.key) : [];
+    const categoryTotal = category.reduce((max, row) => Math.max(max, row.total), 0);
+    const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
-      <div className="section-heading"><div><span>{zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{rows.length}곡 · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
+      <div className="section-heading"><div><span>{zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
       <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span><em>→</em></button>)}</div>
     </div>;
   }
   const single = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("S"));
   const double = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("D"));
   const numericSort = (a: string, b: string) => Number(a.slice(1)) - Number(b.slice(1));
-  const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; count: number }>; choose(key: string): void }> = {
+  const categoryItems = contract.finder.tiles.flatMap((tile) => {
+    const categoryRows = contract.finder.catSongs[tile.name];
+    if (categoryRows && filter !== "onlyshort") {
+      const entries = categoryEntries(contract, tile.name);
+      const total = entries.reduce((max, row) => Math.max(max, row.total), 0);
+      return [{ key: tile.name, count: entries.length, countLabel: total > entries.length ? `${entries.length}/${total} 확인` : `${total}곡` }];
+    }
+    const channelKey = tile.ch.replace(/ 채널$/, "");
+    const channelRows = contract.finder.channelSongs[channelKey];
+    if (channelRows && channelAvailable(channelKey, filter)) return [{ key: channelKey, count: channelRows.length, countLabel: `${channelRows.length}곡` }];
+    return [];
+  });
+  const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string }>; choose(key: string): void }> = {
     single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
     double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
-    channel: { title: "전용 채널", color: "blue", items: Object.entries(contract.finder.channelSongs).map(([key, rows]) => ({ key, count: rows.length })), choose: (key) => setZone({ kind: "channel", key, label: `${key} 채널` }) },
+    category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone(contract.finder.catSongs[key] ? { kind: "category", key, label: key } : { kind: "channel", key, label: `${key} 채널` }) },
   };
   const activeGroup = groups[group];
   return <>
     <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 돼.</p></div>
     <div className="zone-tabs" role="tablist" aria-label="존 종류">
-      {(["single", "double", "series", "channel"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
+      {(["single", "double", "series", "category"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
     </div>
     <ZoneGroup title={activeGroup.title} color={activeGroup.color} items={activeGroup.items} choose={activeGroup.choose} />
   </>;
@@ -399,9 +434,9 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
   return listFor(contract, fake, filter);
 }
 
-function ZoneGroup({ title, color, items, choose }: { title: string; color: string; items: Array<{ key: string; count: number }>; choose(key: string): void }) {
+function ZoneGroup({ title, color, items, choose }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string }>; choose(key: string): void }) {
   return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3><small>{items.length}개</small></div>
-    <div className="zone-grid">{items.map((item) => <button key={item.key} onClick={() => choose(item.key)}><strong>{item.key}</strong><span>{item.count}곡</span><em>→</em></button>)}</div>
+    <div className="zone-grid">{items.map((item) => <button key={item.key} onClick={() => choose(item.key)}><strong>{item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span><em>→</em></button>)}</div>
   </section>;
 }
 

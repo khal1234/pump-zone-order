@@ -32,6 +32,9 @@ check("UI explains screen number convention", appSource.includes("난이도존 1
 check("default credit is normal four hearts", appSource.includes('useState<CreditMode>("normal")') && appSource.includes("useState(MODE_MAX.normal)"));
 check("hearts derive available song filter", appSource.includes('if (hearts >= 4) return mode === "premium" ? "all" : "normal"') && appSource.includes('if (hearts === 3) return "nofull"') && appSource.includes('return "onlyshort"'));
 check("zone and song routes use compact groups", appSource.includes('className="zone-tabs"') && appSource.includes('className="route-groups"') && appSource.includes('{ label: "싱글"') && appSource.includes('{ label: "카테고리"'));
+check("category tab includes arcade and special channels", appSource.includes("finder.catSongs[tile.name]") && appSource.includes("finder.channelSongs[channelKey]") && appSource.includes('title: "카테고리"'));
+check("one heart does not fall back to all songs", appSource.includes('if (filter === "onlyshort") return set.onlyshort'));
+check("sparse category positions stay absolute", appSource.includes("function categoryEntries") && appSource.includes("position: category.pos") && appSource.includes("곳 확인 · 전체"));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;
