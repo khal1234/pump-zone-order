@@ -25,10 +25,8 @@ async function loadSuggestions() {
 async function createSuggestion(request, response) {
   const body = typeof request.body === "string" ? JSON.parse(request.body || "{}") : (request.body || {});
   const message = typeof body.message === "string" ? body.message.trim() : "";
-  const openedAt = Number(body.openedAt);
   if (body.website) return json(response, 400, { ok: false, error: "건의를 접수하지 못했어." });
-  if (!Number.isFinite(openedAt) || Date.now() - openedAt < 1500) return json(response, 429, { ok: false, error: "내용을 확인한 뒤 다시 등록해줘." });
-  if (message.length < 10 || message.length > MAX_LENGTH) return json(response, 400, { ok: false, error: "건의는 10~800자로 적어줘." });
+  if (!message || message.length > MAX_LENGTH) return json(response, 400, { ok: false, error: "건의 내용을 1~800자로 적어줘." });
   if ((message.match(/https?:\/\//gi) || []).length > 2) return json(response, 400, { ok: false, error: "링크는 두 개까지만 넣을 수 있어." });
   const client = String(request.headers["x-forwarded-for"] || request.socket?.remoteAddress || "unknown").split(",")[0];
   if ((recent.get(client) || 0) > Date.now() - 60_000) return json(response, 429, { ok: false, error: "건의는 1분에 한 번 등록할 수 있어." });

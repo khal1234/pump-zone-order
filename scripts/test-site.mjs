@@ -58,6 +58,7 @@ check("song selection aligns viewport to search", appSource.includes('searchRef.
 check("leaving song detail clears shared URL state", appSource.includes('url.searchParams.delete("song")') && appSource.includes('if (next !== "search") clearSongFromUrl()'));
 check("browser back restores search state", appSource.includes('history.pushState(null, "", `?song=${encodeURIComponent(title)}`)') && appSource.includes('window.addEventListener("popstate", restoreUrlState)'));
 check("suggestions are described as private", feedbackSource.includes("건의 내용은 공개되지 않아") && feedbackSource.includes("관리자만 확인"));
+check("short suggestions can be submitted immediately", feedbackSource.includes("짧게 적어도 돼") && !feedbackSource.includes("minLength={10}") && !feedbackSource.includes("openedAt"));
 check("private inbox supports done and delete", feedbackSource.includes('status === "open" ? "done" : "open"') && feedbackSource.includes('method: "DELETE"'));
 check("daily reminder omits suggestion body", reminderSource.includes("확인하지 않은 익명 건의") && !reminderSource.includes("blob.message"));
 check("admin can test Discord without exposing webhook", feedbackSource.includes("Discord 알림 테스트") && reminderSource.includes('request.method === "POST" && isAdmin(request)'));

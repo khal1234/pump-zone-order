@@ -36,8 +36,8 @@ await adminSession({ method: "GET", headers: { cookie } }, res);
 check("signed admin cookie authenticates", res.payload.authenticated === true);
 
 res = response();
-await suggestions({ method: "POST", headers: {}, socket: {}, body: { message: "짧음", openedAt: Date.now() - 5000 } }, res);
-check("invalid anonymous suggestion rejected before storage", res.statusCode === 400);
+await suggestions({ method: "POST", headers: {}, socket: {}, body: { message: "   " } }, res);
+check("empty anonymous suggestion rejected before storage", res.statusCode === 400);
 
 res = response();
 await reminder({ method: "GET", headers: {} }, res);

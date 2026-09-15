@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 interface Suggestion {
   id: string;
@@ -20,15 +20,14 @@ export function FeedbackDialog({ onClose }: { onClose(): void }) {
   const [website, setWebsite] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
-  const openedAt = useRef(Date.now());
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (message.trim().length < 10 || state === "sending") return;
+    if (!message.trim() || state === "sending") return;
     setState("sending");
     setError("");
     try {
-      await api("/api/suggestions", { method: "POST", body: JSON.stringify({ message: message.trim(), website, openedAt: openedAt.current }) });
+      await api("/api/suggestions", { method: "POST", body: JSON.stringify({ message: message.trim(), website }) });
       setState("sent");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "잠시 뒤 다시 시도해줘.");
@@ -41,9 +40,9 @@ export function FeedbackDialog({ onClose }: { onClose(): void }) {
       <form onSubmit={(event) => void submit(event)}>
         <div className="private-notice"><b>건의 내용은 공개되지 않아.</b><p>이름이나 계정 없이 비공개로 저장되고 관리자만 확인해. 답변 기능은 없으니 위치 오류라면 곡명과 존을 함께 적어줘.</p></div>
         <label htmlFor="suggestion">무엇을 고치거나 추가하면 좋을까?</label>
-        <textarea id="suggestion" value={message} onChange={(event) => setMessage(event.target.value)} minLength={10} maxLength={800} placeholder="예: S17에서 ○○곡 순서가 실제 기기와 달라요." autoFocus required />
+        <textarea id="suggestion" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={800} placeholder="예: S17에서 ○○곡 순서가 실제 기기와 달라요." autoFocus required />
         <input className="feedback-trap" value={website} onChange={(event) => setWebsite(event.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" />
-        <div className="feedback-actions"><small>{message.length}/800</small><button type="submit" disabled={message.trim().length < 10 || state === "sending"}>{state === "sending" ? "등록 중…" : "비공개 건의 등록"}</button></div>
+        <div className="feedback-actions"><small>{message.length}/800 · 짧게 적어도 돼</small><button type="submit" disabled={!message.trim() || state === "sending"}>{state === "sending" ? "등록 중…" : "비공개 건의 등록"}</button></div>
         {error && <p className="feedback-error" role="alert">{error}</p>}
       </form>}
   </DialogShell>;
