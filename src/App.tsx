@@ -26,8 +26,7 @@ const RECENT_KEY = "pump-zone-recent-v1";
 
 function pos(set: PositionSet | undefined, filter: FilterKey): number | undefined {
   if (!set) return undefined;
-  if (filter === "onlyshort") return set.onlyshort;
-  return set[filter] ?? set.all;
+  return set[filter];
 }
 
 function channelAvailable(kind: string, filter: FilterKey): boolean {
@@ -55,6 +54,10 @@ function chartLabels(charts: string[], folds: Record<string, string>): string[] 
 function locationsFor(contract: PublicContract, title: string, filter: FilterKey): LocationItem[] {
   const nav = contract.navIndex;
   const items: LocationItem[] = [];
+  // 시리즈 위치가 전체에는 있지만 선택 필터에는 없으면 프리미엄 전용곡이다.
+  // 이때 필터 구분이 없는 옛 카테고리 판독으로 우회 노출하면 안 된다.
+  const titleSeries = nav.series[title];
+  if (titleSeries?.pos.all && !pos(titleSeries.pos, filter)) return items;
   const seenLevelChannels = new Set<string>();
   for (const chart of nav.chartsOf[title] ?? []) {
     const channel = nav.levelFold?.[chart] ?? chart;
@@ -72,6 +75,11 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
   const seriesTotal = pos(series ? nav.seriesTotals[series.zone] : undefined, filter);
   if (series && seriesPosition && seriesTotal) {
     items.push({ id: `series:${series.zone}`, kind: "series", label: series.zone, sublabel: "시리즈존", position: seriesPosition, total: seriesTotal, listKey: series.zone });
+    for (const [category, mirrorZone] of Object.entries(contract.finder.categoryMirrors ?? {})) {
+      if (mirrorZone === series.zone && filter !== "onlyshort") {
+        items.push({ id: `category:${category}`, kind: "category", label: category, sublabel: "카테고리", position: seriesPosition, total: seriesTotal, listKey: category });
+      }
+    }
   }
   const channel = nav.channel[title];
   if (channel && channelAvailable(channel.kind, filter)) {
@@ -85,7 +93,15 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
   return items;
 }
 
-function categoryEntries(contract: PublicContract, key: string): Array<{ title: string; position: number; total: number }> {
+function categoryEntries(contract: PublicContract, key: string, filter: FilterKey): Array<{ title: string; position: number; total: number }> {
+  const mirrorZone = contract.finder.categoryMirrors?.[key];
+  if (mirrorZone) {
+    const total = pos(contract.finder.seriesTotals[mirrorZone], filter) ?? 0;
+    return (contract.finder.seriesSongs[mirrorZone] ?? [])
+      .map((entry) => ({ title: entry.t, position: pos(entry.f, filter) ?? 0, total }))
+      .filter((entry) => entry.position > 0)
+      .sort((a, b) => a.position - b.position);
+  }
   const rows: Array<{ title: string; position: number; total: number }> = [];
   for (const [title, categories] of Object.entries(contract.navIndex.cats)) {
     for (const category of categories) {
@@ -112,7 +128,7 @@ function listFor(contract: PublicContract, location: LocationItem, filter: Filte
   if (location.kind === "channel") {
     return (finder.channelSongs[location.listKey] ?? []).map((title, index) => ({ title, position: index + 1 }));
   }
-  return categoryEntries(contract, location.listKey).map(({ title, position }) => ({ title, position }));
+  return categoryEntries(contract, location.listKey, filter).map(({ title, position }) => ({ title, position }));
 }
 
 function confidenceClass(grade: string): "solid" | "estimated" | "unknown" {
@@ -416,7 +432,10 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
         <div className="neighbor-strip">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><span>{item.position}</span><strong>{item.title}</strong><small>{item.current ? "찾는 곡" : item.side}</small></div>)}</div>
         <p className="wrap-note">첫 곡과 마지막 곡은 서로 이어져. 난이도존 1번은 RANDOM이고, 곡 위치는 기기 화면 번호 그대로 보여줘.</p>
       </div>}
-    </> : <EmptyState title="공개 위치가 아직 없어" copy="곡은 목록에 있지만 현재 기기 위치 근거가 연결되지 않았어." />}
+    </> : <EmptyState
+      title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
+      copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있어." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없어."}
+    />}
     <EvidencePanel rows={evidence} />
   </article>;
 }
@@ -456,7 +475,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   const [group, setGroup] = useState<ZoneGroupKey>("single");
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
-    const category = zone.kind === "category" ? categoryEntries(contract, zone.key) : [];
+    const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
     const categoryTotal = category.reduce((max, row) => Math.max(max, row.total), 0);
     const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
@@ -469,8 +488,9 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   const numericSort = (a: string, b: string) => Number(a.slice(1)) - Number(b.slice(1));
   const categoryItems = contract.finder.tiles.flatMap((tile) => {
     const categoryRows = contract.finder.catSongs[tile.name];
-    if (categoryRows && filter !== "onlyshort") {
-      const entries = categoryEntries(contract, tile.name);
+    const mirroredCategory = contract.finder.categoryMirrors?.[tile.name];
+    if ((categoryRows || mirroredCategory) && filter !== "onlyshort") {
+      const entries = categoryEntries(contract, tile.name, filter);
       const total = entries.reduce((max, row) => Math.max(max, row.total), 0);
       return [{ key: tile.name, count: entries.length, countLabel: total > entries.length ? `${entries.length}/${total} 확인` : `${total}곡` }];
     }
@@ -483,7 +503,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
     double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
-    category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone(contract.finder.catSongs[key] ? { kind: "category", key, label: key } : { kind: "channel", key, label: `${key} 채널` }) },
+    category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: `${key} 채널` }) },
   };
   const activeGroup = groups[group];
   return <>

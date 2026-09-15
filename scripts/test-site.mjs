@@ -35,7 +35,15 @@ check("default credit is normal four hearts", appSource.includes('useState<Credi
 check("hearts derive available song filter", appSource.includes('if (hearts >= 4) return mode === "premium" ? "all" : "normal"') && appSource.includes('if (hearts === 3) return "nofull"') && appSource.includes('return "onlyshort"'));
 check("zone and song routes use compact groups", appSource.includes('className="zone-tabs"') && appSource.includes('className="route-groups"') && appSource.includes('{ label: "싱글"') && appSource.includes('{ label: "카테고리"'));
 check("category tab includes arcade and special channels", appSource.includes("finder.catSongs[tile.name]") && appSource.includes("finder.channelSongs[channelKey]") && appSource.includes('title: "카테고리"'));
-check("one heart does not fall back to all songs", appSource.includes('if (filter === "onlyshort") return set.onlyshort'));
+check("one heart does not fall back to all songs", appSource.includes("return set[filter]") && !appSource.includes("set.onlyshort"));
+check("filtered positions never fall back to premium all", appSource.includes("return set[filter]") && !appSource.includes("set[filter] ?? set.all"));
+check("premium-only song explains normal unavailability", appSource.includes('title={filter === "normal" ? "노말 이용 불가"') && appSource.includes("프리미엄 크레딧에서만"));
+check("premium-only song cannot leak through static categories", appSource.includes("titleSeries?.pos.all && !pos(titleSeries.pos, filter)") && !contract.navIndex.series["콰투오룩스"].pos.normal);
+check("NEW TUNES mirrors latest series", contract.finder.categoryMirrors?.["NEW TUNES"] === "PHOENIX 2" && appSource.includes("finder.categoryMirrors"));
+const p2 = contract.finder.seriesSongs["PHOENIX 2"];
+const expectedP2 = (filter) => p2.filter((entry) => entry.f[filter]).map((entry) => `${entry.f[filter]}:${entry.t}`);
+check("NEW TUNES normal equals PHOENIX 2 normal", expectedP2("normal").length === 22 && expectedP2("normal").at(-1) === "22:슈퍼☆하라구로☆팝");
+check("NEW TUNES premium equals PHOENIX 2 premium", expectedP2("all").length === 25 && expectedP2("all").at(-1) === "25:슈퍼☆하라구로☆팝");
 check("sparse category positions stay absolute", appSource.includes("function categoryEntries") && appSource.includes("position: category.pos") && appSource.includes("곳 확인 · 전체"));
 check("difficulty browser uses physical folded channels", appSource.includes('finder.subs["DIFFICULTY ZONE SINGLE"]') && appSource.includes("function levelLabel") && appSource.includes("seenLevelChannels"));
 const physicalLevels = new Set([

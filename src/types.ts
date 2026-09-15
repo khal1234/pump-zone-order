@@ -24,11 +24,13 @@ export interface NavIndex {
   levelFold: Record<string, string>;
   series: Record<string, { zone: string; pos: PositionSet }>;
   seriesTotals: Record<string, PositionSet>;
+  categoryMirrors?: Record<string, string>;
 }
 
 export interface FinderData {
   alias: Record<string, string>;
   catSongs: Record<string, string[]>;
+  categoryMirrors?: Record<string, string>;
   channelSongs: Record<string, string[]>;
   coopSongs: Array<{ t: string; n: number; people?: string }>;
   levelSongs: Record<string, FinderEntry[]>;
