@@ -29,6 +29,9 @@ check("no personal/local markers", !/c:\\users|d:\\xsanity|play_history|my_recor
 const s17 = contract.finder.levelSongs.S17;
 check("level positions preserve RANDOM slot", s17[0].f.all === 2 && contract.navIndex.levelTotals.S17.all === Math.max(...s17.map((row) => row.f.all)));
 check("UI explains screen number convention", appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("기기 화면 번호 그대로"));
+check("default credit is normal four hearts", appSource.includes('useState<CreditMode>("normal")') && appSource.includes("useState(MODE_MAX.normal)"));
+check("hearts derive available song filter", appSource.includes('if (hearts >= 4) return mode === "premium" ? "all" : "normal"') && appSource.includes('if (hearts === 3) return "nofull"') && appSource.includes('return "onlyshort"'));
+check("zone and song routes use compact groups", appSource.includes('className="zone-tabs"') && appSource.includes('className="route-groups"') && appSource.includes('{ label: "싱글"') && appSource.includes('{ label: "카테고리"'));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;

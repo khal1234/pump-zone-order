@@ -11,16 +11,28 @@ import type {
 } from "./types";
 
 const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
-  { key: "all", label: "전체 곡", short: "전체" },
+  { key: "all", label: "프리미엄 전체 곡", short: "전체" },
+  { key: "normal", label: "노말에서 고를 수 있는 곡", short: "노말" },
   { key: "nofull", label: "풀송 제외", short: "풀송 제외" },
   { key: "nofullremix", label: "풀송·리믹스 제외", short: "둘 다 제외" },
+  { key: "onlyshort", label: "숏컷만", short: "숏컷만" },
 ];
+type CreditMode = "normal" | "premium";
+type ZoneGroupKey = "single" | "double" | "series" | "channel";
+const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
 
 function pos(set: PositionSet | undefined, filter: FilterKey): number | undefined {
   if (!set) return undefined;
   return set[filter] ?? set.all;
+}
+
+function heartsToFilter(mode: CreditMode, hearts: number): FilterKey {
+  if (hearts >= 4) return mode === "premium" ? "all" : "normal";
+  if (hearts === 3) return "nofull";
+  if (hearts === 2) return "nofullremix";
+  return "onlyshort";
 }
 
 function locationsFor(contract: PublicContract, title: string, filter: FilterKey): LocationItem[] {
@@ -98,7 +110,9 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("search");
-  const [filter, setFilter] = useState<FilterKey>("all");
+  const [creditMode, setCreditMode] = useState<CreditMode>("normal");
+  const [hearts, setHearts] = useState(MODE_MAX.normal);
+  const filter = heartsToFilter(creditMode, hearts);
   const [zone, setZone] = useState<ZoneSelection | null>(null);
   const [recent, setRecent] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]"); } catch { return []; }
@@ -199,7 +213,7 @@ export default function App() {
           <h1>곡은 기억났는데,<br/><em>어디 있었지?</em></h1>
           <p className="hero-copy">곡 이름만 입력하면 시리즈존과 난이도존 위치를 바로 찾아줘.</p>
           <SearchBox ref={searchRef} query={query} setQuery={(value) => { setQuery(value); setSelectedTitle(null); }} clear={clearSearch} />
-          <FilterControl value={filter} onChange={setFilter} />
+          <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
         </section>
 
         <section className="content" aria-live="polite">
@@ -232,9 +246,22 @@ const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: 
   </div>;
 });
 
-function FilterControl({ value, onChange }: { value: FilterKey; onChange(value: FilterKey): void }) {
-  return <div className="filter-control" aria-label="곡 필터">
-    {FILTERS.map((item) => <button key={item.key} className={value === item.key ? "active" : ""} onClick={() => onChange(item.key)} title={item.label}>{item.short}</button>)}
+function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: { mode: CreditMode; hearts: number; filter: FilterKey; onModeChange(value: CreditMode): void; onHeartsChange(value: number): void }) {
+  const max = MODE_MAX[mode];
+  const filterLabel = FILTERS.find((item) => item.key === filter)?.label;
+  return <div className="credit-control">
+    <div className="mode-control" aria-label="크레딧 종류">
+      <button className={mode === "normal" ? "active" : ""} onClick={() => onModeChange("normal")}><b>노말</b><small>4♥</small></button>
+      <button className={mode === "premium" ? "active" : ""} onClick={() => onModeChange("premium")}><b>프리미엄</b><small>6♥</small></button>
+    </div>
+    <div className="heart-control">
+      <span className="heart-title">남은 하트</span>
+      <div className="heart-buttons" role="group" aria-label={`남은 하트 ${hearts}개`}>
+        {Array.from({ length: max }, (_, index) => index + 1).map((value) => <button key={value} className={value <= hearts ? "filled" : ""} onClick={() => onHeartsChange(value)} aria-label={`하트 ${value}개로 설정`} aria-pressed={value === hearts}>♥</button>)}
+      </div>
+      <b className="heart-count">{hearts}/{max}</b>
+      <small className="heart-result">{filterLabel}</small>
+    </div>
   </div>;
 }
 
@@ -271,6 +298,12 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
   const neighbors = active ? neighborTriplet(contract, active, title, filter) : [];
   const evidence = evidenceFor(contract, title);
   const songId = contract.songs.find((song) => song.title === title)?.id;
+  const routeGroups = [
+    { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
+    { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
+    { label: "시리즈존", items: locations.filter((item) => item.kind === "series") },
+    { label: "카테고리", items: locations.filter((item) => item.kind === "category" || item.kind === "channel") },
+  ].filter((group) => group.items.length > 0);
 
   async function share() {
     const url = `${location.origin}${location.pathname}?song=${encodeURIComponent(title)}`;
@@ -285,10 +318,13 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
     </div>
     <div className="title-block"><p>SONG LOCATION</p><h2>{title}</h2><span>{songId}</span></div>
     {locations.length ? <>
-      <div className="route-grid">{locations.map((location) => <button key={location.id} onClick={() => setActiveId(location.id)} className={`route-card ${active?.id === location.id ? "active" : ""}`}>
-        <span className="route-kind">{location.sublabel}</span><strong>{location.label}</strong>
-        <div><b>{location.position}</b><span>/ {location.total}</span></div><small>이 위치의 앞뒤 보기</small>
-      </button>)}</div>
+      <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
+        <h3>{group.label}</h3>
+        <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => setActiveId(location.id)} className={active?.id === location.id ? "active" : ""}>
+          <strong>{location.kind === "level" ? location.listKey : location.label.replace(" 채널", "")}</strong>
+          <span><b>{location.position}</b>/{location.total}</span>
+        </button>)}</div>
+      </div>)}</div>
       {active && <div className="neighbor-panel">
         <div className="neighbor-head"><span>기기에서 이렇게 보여</span><b>{active.label} · {FILTERS.find((item) => item.key === filter)?.label}</b></div>
         <div className="neighbor-strip">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><span>{item.position}</span><strong>{item.title}</strong><small>{item.current ? "찾는 곡" : item.side}</small></div>)}</div>
@@ -331,6 +367,7 @@ function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
+  const [group, setGroup] = useState<ZoneGroupKey>("single");
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
@@ -341,12 +378,19 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   const single = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("S"));
   const double = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("D"));
   const numericSort = (a: string, b: string) => Number(a.slice(1)) - Number(b.slice(1));
+  const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; count: number }>; choose(key: string): void }> = {
+    single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
+    double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
+    series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
+    channel: { title: "전용 채널", color: "blue", items: Object.entries(contract.finder.channelSongs).map(([key, rows]) => ({ key, count: rows.length })), choose: (key) => setZone({ kind: "channel", key, label: `${key} 채널` }) },
+  };
+  const activeGroup = groups[group];
   return <>
     <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 돼.</p></div>
-    <ZoneGroup title="싱글 난이도존" color="mint" items={single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length }))} choose={(key) => setZone({ kind: "level", key, label: `${key} 난이도존` })} />
-    <ZoneGroup title="더블 난이도존" color="coral" items={double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length }))} choose={(key) => setZone({ kind: "level", key, label: `${key} 난이도존` })} />
-    <ZoneGroup title="시리즈존" color="gold" items={contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length }))} choose={(key) => setZone({ kind: "series", key, label: key })} />
-    <ZoneGroup title="전용 채널" color="blue" items={Object.entries(contract.finder.channelSongs).map(([key, rows]) => ({ key, count: rows.length }))} choose={(key) => setZone({ kind: "channel", key, label: `${key} 채널` })} />
+    <div className="zone-tabs" role="tablist" aria-label="존 종류">
+      {(["single", "double", "series", "channel"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
+    </div>
+    <ZoneGroup title={activeGroup.title} color={activeGroup.color} items={activeGroup.items} choose={activeGroup.choose} />
   </>;
 }
 

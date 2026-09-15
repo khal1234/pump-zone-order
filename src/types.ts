@@ -1,4 +1,4 @@
-export type FilterKey = "all" | "nofull" | "nofullremix" | "normal";
+export type FilterKey = "all" | "nofull" | "nofullremix" | "normal" | "onlyshort";
 export type TabKey = "search" | "zones" | "recent";
 
 export interface PositionSet {
