@@ -52,6 +52,7 @@ check("browser back restores search state", appSource.includes('history.pushStat
 check("suggestions are described as private", feedbackSource.includes("건의 내용은 공개되지 않아") && feedbackSource.includes("관리자만 확인"));
 check("private inbox supports done and delete", feedbackSource.includes('status === "open" ? "done" : "open"') && feedbackSource.includes('method: "DELETE"'));
 check("daily reminder omits suggestion body", reminderSource.includes("확인하지 않은 익명 건의") && !reminderSource.includes("blob.message"));
+check("admin can test Discord without exposing webhook", feedbackSource.includes("Discord 알림 테스트") && reminderSource.includes('request.method === "POST" && isAdmin(request)'));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;
