@@ -21,6 +21,7 @@ export interface NavIndex {
   chartsOf: Record<string, string[]>;
   levels: Record<string, PositionSet>;
   levelTotals: Record<string, PositionSet>;
+  levelFold: Record<string, string>;
   series: Record<string, { zone: string; pos: PositionSet }>;
   seriesTotals: Record<string, PositionSet>;
 }
@@ -32,6 +33,7 @@ export interface FinderData {
   coopSongs: Array<{ t: string; n: number; people?: string }>;
   levelSongs: Record<string, FinderEntry[]>;
   levelTotals: Record<string, PositionSet>;
+  subs: Record<string, string[]>;
   seriesOrder: string[];
   seriesSongs: Record<string, FinderEntry[]>;
   seriesTotals: Record<string, PositionSet>;

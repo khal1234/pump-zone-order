@@ -35,6 +35,16 @@ check("zone and song routes use compact groups", appSource.includes('className="
 check("category tab includes arcade and special channels", appSource.includes("finder.catSongs[tile.name]") && appSource.includes("finder.channelSongs[channelKey]") && appSource.includes('title: "카테고리"'));
 check("one heart does not fall back to all songs", appSource.includes('if (filter === "onlyshort") return set.onlyshort'));
 check("sparse category positions stay absolute", appSource.includes("function categoryEntries") && appSource.includes("position: category.pos") && appSource.includes("곳 확인 · 전체"));
+check("difficulty browser uses physical folded channels", appSource.includes('finder.subs["DIFFICULTY ZONE SINGLE"]') && appSource.includes("function levelLabel") && appSource.includes("seenLevelChannels"));
+const physicalLevels = new Set([
+  ...(contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? []),
+  ...(contract.finder.subs["DIFFICULTY ZONE DOUBLE"] ?? []),
+]);
+const exposedLevels = Object.keys(contract.finder.levelSongs);
+check("finder exposes only physical difficulty channels", exposedLevels.length === physicalLevels.size && exposedLevels.every((level) => physicalLevels.has(level)) && !contract.finder.levelSongs.S26 && !contract.finder.levelSongs.D28);
+check("search results fold chart aliases into OVER labels", appSource.includes("function chartLabels") && appSource.includes("levelLabel(folds[chart] ?? chart, folds)"));
+check("typing from any tab opens search results", appSource.includes('if (value.trim()) setTab("search")'));
+check("song selection aligns viewport to search", appSource.includes('searchRef.current?.scrollIntoView({ block: "start"'));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;

@@ -43,15 +43,27 @@ function heartsToFilter(mode: CreditMode, hearts: number): FilterKey {
   return "onlyshort";
 }
 
+function levelLabel(channel: string, folds: Record<string, string>): string {
+  return Object.values(folds).includes(channel) ? `${channel} OVER` : channel;
+}
+
+function chartLabels(charts: string[], folds: Record<string, string>): string[] {
+  return [...new Set(charts.map((chart) => levelLabel(folds[chart] ?? chart, folds)))];
+}
+
 function locationsFor(contract: PublicContract, title: string, filter: FilterKey): LocationItem[] {
   const nav = contract.navIndex;
   const items: LocationItem[] = [];
+  const seenLevelChannels = new Set<string>();
   for (const chart of nav.chartsOf[title] ?? []) {
-    const positions = nav.levels[`${title}|${chart}`];
+    const channel = nav.levelFold?.[chart] ?? chart;
+    if (seenLevelChannels.has(channel)) continue;
+    const positions = nav.levels[`${title}|${channel}`] ?? nav.levels[`${title}|${chart}`];
     const position = pos(positions, filter);
-    const total = pos(nav.levelTotals[chart], filter);
+    const total = pos(nav.levelTotals[channel], filter);
     if (position && total) {
-      items.push({ id: `level:${chart}`, kind: "level", label: `${chart} 난이도존`, sublabel: chart.startsWith("S") ? "싱글" : "더블", position, total, listKey: chart });
+      seenLevelChannels.add(channel);
+      items.push({ id: `level:${channel}`, kind: "level", label: levelLabel(channel, nav.levelFold ?? {}), sublabel: channel.startsWith("S") ? "싱글" : "더블", position, total, listKey: channel });
     }
   }
   const series = nav.series[title];
@@ -179,6 +191,19 @@ export default function App() {
     return window.NAV_SEARCH.rankTitles(query, titles, (title) => inverseAliases[title] ?? []).slice(0, 24);
   }, [query, titles, inverseAliases]);
 
+  function scrollToSearch() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      searchRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }));
+  }
+
+  function updateQuery(value: string) {
+    setQuery(value);
+    setSelectedTitle(null);
+    setZone(null);
+    if (value.trim()) setTab("search");
+  }
+
   function chooseTitle(title: string) {
     setSelectedTitle(title);
     setQuery(title);
@@ -188,7 +213,7 @@ export default function App() {
     setRecent(next);
     localStorage.setItem(RECENT_KEY, JSON.stringify(next));
     history.replaceState(null, "", `?song=${encodeURIComponent(title)}`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToSearch();
   }
 
   function clearSearch() {
@@ -232,7 +257,7 @@ export default function App() {
           <p className="eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
           <h1>곡은 기억났는데,<br/><em>어디 있었지?</em></h1>
           <p className="hero-copy">곡 이름만 입력하면 시리즈존과 난이도존 위치를 바로 찾아줘.</p>
-          <SearchBox ref={searchRef} query={query} setQuery={(value) => { setQuery(value); setSelectedTitle(null); }} clear={clearSearch} />
+          <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} />
           <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
         </section>
 
@@ -299,7 +324,7 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
     {results.length === 0 ? <EmptyState title="가까운 곡을 찾지 못했어" copy="문장부호를 빼거나 제목의 앞부분만 입력해봐." /> :
       <div className="result-list">{results.map((result, index) => {
         const locations = locationsFor(contract, result.title, filter);
-        const charts = contract.navIndex.chartsOf[result.title] ?? [];
+        const charts = chartLabels(contract.navIndex.chartsOf[result.title] ?? [], contract.navIndex.levelFold ?? {});
         return <button className="result-card" key={result.title} onClick={() => onChoose(result.title)}>
           <span className="result-index">{String(index + 1).padStart(2, "0")}</span>
           <span className="result-main"><strong>{result.title}</strong><small>{charts.slice(0, 7).join(" · ") || "전용 채널 곡"}</small></span>
@@ -341,7 +366,7 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>
         <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => setActiveId(location.id)} className={active?.id === location.id ? "active" : ""}>
-          <strong>{location.kind === "level" ? location.listKey : location.label.replace(" 채널", "")}</strong>
+          <strong>{location.kind === "level" ? location.label : location.label.replace(" 채널", "")}</strong>
           <span><b>{location.position}</b>/{location.total}</span>
         </button>)}</div>
       </div>)}</div>
@@ -398,8 +423,8 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
       <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span><em>→</em></button>)}</div>
     </div>;
   }
-  const single = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("S"));
-  const double = Object.keys(contract.finder.levelSongs).filter((key) => key.startsWith("D"));
+  const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
+  const double = contract.finder.subs["DIFFICULTY ZONE DOUBLE"] ?? [];
   const numericSort = (a: string, b: string) => Number(a.slice(1)) - Number(b.slice(1));
   const categoryItems = contract.finder.tiles.flatMap((tile) => {
     const categoryRows = contract.finder.catSongs[tile.name];
@@ -413,9 +438,9 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     if (channelRows && channelAvailable(channelKey, filter)) return [{ key: channelKey, count: channelRows.length, countLabel: `${channelRows.length}곡` }];
     return [];
   });
-  const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string }>; choose(key: string): void }> = {
-    single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
-    double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "level", key, label: `${key} 난이도존` }) },
+  const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; label?: string; count: number; countLabel?: string }>; choose(key: string): void }> = {
+    single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
+    double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
     category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone(contract.finder.catSongs[key] ? { kind: "category", key, label: key } : { kind: "channel", key, label: `${key} 채널` }) },
   };
@@ -434,9 +459,9 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
   return listFor(contract, fake, filter);
 }
 
-function ZoneGroup({ title, color, items, choose }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string }>; choose(key: string): void }) {
+function ZoneGroup({ title, color, items, choose }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void }) {
   return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3><small>{items.length}개</small></div>
-    <div className="zone-grid">{items.map((item) => <button key={item.key} onClick={() => choose(item.key)}><strong>{item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span><em>→</em></button>)}</div>
+    <div className="zone-grid">{items.map((item) => <button key={item.key} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span><em>→</em></button>)}</div>
   </section>;
 }
 
