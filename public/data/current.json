@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "contentHash": "09c752a455cf689890b138bc52d625feebaf0ceb6bd9c0e42e74ae086cab38cc",
+  "dataUrl": "/data/09c752a455cf689890b138bc52d625feebaf0ceb6bd9c0e42e74ae086cab38cc.json",
+  "searchUrl": "/data/nav_search.js",
+  "game": {
+    "contentThrough": "PHOENIX 2",
+    "name": "Pump It Up"
+  }
+}

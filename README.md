@@ -1,4 +1,34 @@
-# pump-zone-order
+# Pump Zone Finder
+
+PIU PHOENIX 2의 곡 위치를 휴대폰에서 빠르게 찾는 정적 웹앱과 근거 자료다.
+
+## 사이트 실행
+
+```bash
+npm install
+npm run dev
+```
+
+검증과 배포용 빌드는 다음 한 명령으로 실행한다.
+
+```bash
+npm run check
+```
+
+사이트는 `public/data/current.json`이 가리키는 버전 고정 계약을 읽는다. 검색 규칙은
+`public/data/nav_search.js` 한 파일을 「담에 할 것」 화면과 공유한다. CSV는 사이트가 직접
+읽지 않으며 사용자가 관리할 대상도 아니다.
+
+XSanity의 검증된 계약을 이 저장소로 옮길 때는 다음 생성기를 쓴다.
+
+```bash
+node scripts/sync-site-data.mjs --contract <public_nav_contract.json> --search <nav_search.js>
+```
+
+같은 입력이면 같은 `contentHash`와 같은 버전 파일이 생성된다. 계약·검색 해시, 공개 대상
+저장소, 개인정보·로컬 경로 표식이 맞지 않으면 복사를 중단한다.
+
+## 위치 자료
 
 PIU(펌프 잇 업) PHOENIX 2 오락실 설치본의 **존별 곡 순서 데이터** + 재현 스크립트.
 

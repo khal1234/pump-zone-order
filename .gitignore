@@ -1,4 +1,7 @@
-__pycache__/
-*.pyc
-user_confirmations.csv
-vod_targets.csv
+node_modules/
+dist/
+.vercel/
+*.local
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
