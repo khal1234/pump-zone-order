@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { loadContract, type LoadState } from "./data";
+import { FeedbackAdmin, FeedbackDialog } from "./Feedback";
 import type {
   EvidenceRow,
   FilterKey,
@@ -150,6 +151,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]"); } catch { return []; }
   });
   const [light, setLight] = useState(() => localStorage.getItem("pump-zone-theme") === "light");
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(() => new URLSearchParams(location.search).get("admin") === "feedback");
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -215,6 +218,20 @@ export default function App() {
     const url = new URL(location.href);
     url.searchParams.delete("song");
     history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function openAdmin() {
+    const url = new URL(location.href);
+    url.searchParams.set("admin", "feedback");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    setAdminOpen(true);
+  }
+
+  function closeAdmin() {
+    const url = new URL(location.href);
+    url.searchParams.delete("admin");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    setAdminOpen(false);
   }
 
   function updateQuery(value: string) {
@@ -293,7 +310,10 @@ export default function App() {
 
       <footer className="data-footer">
         <span>{contract.game.contentThrough}</span><span>계약 {contract.contentHash.slice(0, 12)}</span><span>{contract.songs.length}곡</span>
+        <button onClick={() => setFeedbackOpen(true)}>익명 건의</button><button onClick={openAdmin}>관리</button>
       </footer>
+      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+      {adminOpen && <FeedbackAdmin onClose={closeAdmin} />}
       <nav className="bottom-nav" aria-label="주요 메뉴">
         <NavButton active={tab === "search"} icon="search" label="검색" onClick={() => changeTab("search")} />
         <NavButton active={tab === "zones"} icon="zones" label="존 목록" onClick={() => changeTab("zones")} />

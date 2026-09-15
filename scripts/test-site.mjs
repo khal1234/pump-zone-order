@@ -10,6 +10,8 @@ const contract = JSON.parse(contractText);
 const searchBytes = await readFile(resolve("public/data/nav_search.js"));
 const appSource = await readFile(resolve("src/App.tsx"), "utf8");
 const dataSource = await readFile(resolve("src/data.ts"), "utf8");
+const feedbackSource = await readFile(resolve("src/Feedback.tsx"), "utf8");
+const reminderSource = await readFile(resolve("api/suggestion-reminder.js"), "utf8");
 
 const checks = [];
 const check = (name, condition) => {
@@ -47,6 +49,9 @@ check("typing from any tab opens search results", appSource.includes('if (value.
 check("song selection aligns viewport to search", appSource.includes('searchRef.current?.scrollIntoView({ block: "start"'));
 check("leaving song detail clears shared URL state", appSource.includes('url.searchParams.delete("song")') && appSource.includes('if (next !== "search") clearSongFromUrl()'));
 check("browser back restores search state", appSource.includes('history.pushState(null, "", `?song=${encodeURIComponent(title)}`)') && appSource.includes('window.addEventListener("popstate", restoreUrlState)'));
+check("suggestions are described as private", feedbackSource.includes("건의 내용은 공개되지 않아") && feedbackSource.includes("관리자만 확인"));
+check("private inbox supports done and delete", feedbackSource.includes('status === "open" ? "done" : "open"') && feedbackSource.includes('method: "DELETE"'));
+check("daily reminder omits suggestion body", reminderSource.includes("확인하지 않은 익명 건의") && !reminderSource.includes("blob.message"));
 
 await import("../public/data/nav_search.js");
 const search = globalThis.NAV_SEARCH;

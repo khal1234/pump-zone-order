@@ -2,6 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "crons": [
+    { "path": "/api/suggestion-reminder", "schedule": "0 0 * * *" }
+  ],
   "headers": [
     {
       "source": "/data/(.*)",
