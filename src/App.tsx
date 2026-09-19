@@ -226,8 +226,13 @@ export default function App() {
 
   function scrollToSearch() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      searchRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      (searchRef.current?.closest(".search-box") ?? searchRef.current)?.scrollIntoView({ block: "start", behavior: "smooth" });
     }));
+  }
+
+  function scrollToSearchSoon() {
+    scrollToSearch();
+    window.setTimeout(scrollToSearch, 350);
   }
 
   function clearSongFromUrl() {
@@ -311,11 +316,11 @@ export default function App() {
           <p className="eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
           <h1>곡은 기억났는데,<br/><em>어디 있었지?</em></h1>
           <p className="hero-copy">곡 이름만 입력하면 시리즈존과 난이도존 위치를 바로 찾아줘.</p>
-          <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} />
           <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
+          <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} onFocus={scrollToSearchSoon} />
         </section>
 
-        <section className="content" aria-live="polite">
+        <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
           {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} />}
@@ -339,13 +344,13 @@ export default function App() {
   );
 }
 
-const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: string): void; clear(): void }>(function SearchBox({ query, setQuery, clear }, ref) {
-  return <div className="search-box">
+const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: string): void; clear(): void; onFocus(): void }>(function SearchBox({ query, setQuery, clear, onFocus }, ref) {
+  return <form className="search-box" role="search" onSubmit={(event) => { event.preventDefault(); (event.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur(); }}>
     <Icon name="search" />
-    <input ref={ref} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="곡 이름을 입력해봐" aria-label="곡 이름 검색" autoComplete="off" />
+    <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} onFocus={onFocus} placeholder="곡 이름을 입력해봐" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
     {query && <button onClick={clear} aria-label="검색어 지우기"><Icon name="close" /></button>}
     <kbd>⌘ K</kbd>
-  </div>;
+  </form>;
 });
 
 function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: { mode: CreditMode; hearts: number; filter: FilterKey; onModeChange(value: CreditMode): void; onHeartsChange(value: number): void }) {
@@ -377,9 +382,8 @@ function SearchLanding({ onChoose, recent }: { onChoose(title: string): void; re
 
 function SearchResults({ query, results, contract, filter, onChoose }: { query: string; results: NavSearchHit[]; contract: PublicContract; filter: FilterKey; onChoose(title: string): void }) {
   return <>
-    <div className="section-heading"><div><span>검색 결과</span><h2>“{query}”</h2></div><p>{results.length}곡을 가까운 순서로 찾았어.</p></div>
     {results.length === 0 ? <EmptyState title="가까운 곡을 찾지 못했어" copy="문장부호를 빼거나 제목의 앞부분만 입력해봐." /> :
-      <div className="result-list">{results.map((result, index) => {
+      <div className="result-list tight">{results.map((result, index) => {
         const locations = locationsFor(contract, result.title, filter);
         const charts = chartLabels(contract.navIndex.chartsOf[result.title] ?? [], contract.navIndex.levelFold ?? {});
         return <button className="result-card" key={result.title} onClick={() => onChoose(result.title)}>

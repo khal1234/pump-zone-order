@@ -277,3 +277,13 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation-duration: .01ms !important; }
 }
+
+/* 2026-09-19 사용자 «검색결과 … 위아래 여백 최대한 줄이고» · «검색화면이 젤 위로» */
+.credit-control + .search-box { margin-top: 10px; }
+.search-box input[type="search"]::-webkit-search-cancel-button { display: none; }
+.search-box { scroll-margin-top: 6px; }
+.content.searching { min-height: 100svh; }
+.result-list.tight { gap: 4px; }
+.result-list.tight .result-card { min-height: 0; padding: 7px 12px; }
+.result-list.tight .result-card small { margin-top: 1px; }
+.hero:has(+ .content.searching) { margin-bottom: 10px; }
