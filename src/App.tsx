@@ -85,6 +85,10 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
   if (channel && channelAvailable(channel.kind, filter)) {
     items.push({ id: `channel:${channel.kind}`, kind: "channel", label: `${channel.kind} 채널`, sublabel: "전용 채널", position: channel.pos, total: channel.total, listKey: channel.kind });
   }
+  for (const [mode, list] of Object.entries(contract.finder.modeSongs ?? {})) {
+    const index = list.indexOf(title);
+    if (index >= 0) items.push({ id: `mode:${mode}`, kind: "channel", label: mode, sublabel: "게임 모드", position: index + 1, total: list.length, listKey: mode });
+  }
   if (filter !== "onlyshort") {
     for (const category of nav.cats[title] ?? []) {
       items.push({ id: `category:${category.tile}`, kind: "category", label: category.tile, sublabel: "카테고리", position: category.pos, total: category.total, listKey: category.tile });
@@ -126,7 +130,7 @@ function listFor(contract: PublicContract, location: LocationItem, filter: Filte
       .sort((a, b) => a.position - b.position);
   }
   if (location.kind === "channel") {
-    return (finder.channelSongs[location.listKey] ?? []).map((title, index) => ({ title, position: index + 1 }));
+    return (finder.channelSongs[location.listKey] ?? finder.modeSongs?.[location.listKey] ?? finder.modeRows?.[location.listKey] ?? []).map((title, index) => ({ title, position: index + 1 }));
   }
   return categoryEntries(contract, location.listKey, filter).map(({ title, position }) => ({ title, position }));
 }
@@ -408,7 +412,8 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
     { label: "시리즈존", items: locations.filter((item) => item.kind === "series") },
-    { label: "카테고리", items: locations.filter((item) => item.kind === "category" || item.kind === "channel") },
+    { label: "카테고리", items: locations.filter((item) => (item.kind === "category" || item.kind === "channel") && item.sublabel !== "게임 모드") },
+    { label: "모드", items: locations.filter((item) => item.sublabel === "게임 모드") },
   ].filter((group) => group.items.length > 0);
 
   async function share() {
@@ -481,10 +486,11 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     const rows = zoneRows(contract, zone, filter);
     const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
     const categoryTotal = category.reduce((max, row) => Math.max(max, row.total), 0);
-    const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : `${rows.length}곡`;
+    const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : contract.finder.modeRows?.[zone.key] ? `${rows.length}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
-      <div className="section-heading"><div><span>{zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
-      <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span><em>→</em></button>)}</div>
+      <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
+      {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없어.</p></div> :
+      <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span><em>→</em></button>)}</div>}
     </div>;
   }
   const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
@@ -498,16 +504,21 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
       const total = entries.reduce((max, row) => Math.max(max, row.total), 0);
       return [{ key: tile.name, count: entries.length, countLabel: total > entries.length ? `${entries.length}/${total} 확인` : `${total}곡` }];
     }
+    const modeKey = tile.name === "ONLINE MATCHING" ? "온라인 매칭" : "";
+    const modeRows = modeKey ? contract.finder.modeRows?.[modeKey] : undefined;
+    if (modeRows) return [{ key: modeKey, count: modeRows.length, countLabel: `${modeRows.length}칸` }];
     const channelKey = tile.ch.replace(/ 채널$/, "");
     const channelRows = contract.finder.channelSongs[channelKey];
     if (channelRows && channelAvailable(channelKey, filter)) return [{ key: channelKey, count: channelRows.length, countLabel: `${channelRows.length}곡` }];
     return [];
   });
+  for (const [mode, list] of Object.entries(contract.finder.modeSongs ?? {})) categoryItems.push({ key: mode, count: list.length, countLabel: `${list.length}곡` });
+  const isMode = (key: string) => Boolean(contract.finder.modeSongs?.[key] || contract.finder.modeRows?.[key]);
   const groups: Record<ZoneGroupKey, { title: string; color: string; items: Array<{ key: string; label?: string; count: number; countLabel?: string }>; choose(key: string): void }> = {
     single: { title: "싱글 난이도존", color: "mint", items: single.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
     double: { title: "더블 난이도존", color: "coral", items: double.sort(numericSort).map((key) => ({ key, count: zoneRows(contract, { kind: "level", key, label: key }, filter).length, label: levelLabel(key, contract.navIndex.levelFold ?? {}) })), choose: (key) => setZone({ kind: "level", key, label: levelLabel(key, contract.navIndex.levelFold ?? {}) }) },
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
-    category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: `${key} 채널` }) },
+    category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: isMode(key) ? key : `${key} 채널` }) },
   };
   const activeGroup = groups[group];
   return <>

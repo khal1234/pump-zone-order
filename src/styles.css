@@ -287,3 +287,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .result-list.tight .result-card { min-height: 0; padding: 7px 12px; }
 .result-list.tight .result-card small { margin-top: 1px; }
 .hero:has(+ .content.searching) { margin-bottom: 10px; }
+/* 2026-09-19 온라인 매칭 — 곡이 아닌 칸은 누를 수 없는 줄로 */
+.zone-row-static { min-height: 40px; display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; padding: 6px 13px; border: 1px dashed var(--line); border-radius: 12px; }
+.zone-row-static b { color: var(--mint); font: 700 13px "DM Sans", sans-serif; }.zone-row-static span { font-size: 12px; }
+.zone-note { margin: 6px 2px 0; color: var(--muted); font-size: 11px; }

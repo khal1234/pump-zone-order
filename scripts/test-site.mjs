@@ -13,6 +13,7 @@ const dataSource = await readFile(resolve("src/data.ts"), "utf8");
 const feedbackSource = await readFile(resolve("src/Feedback.tsx"), "utf8");
 const reminderSource = await readFile(resolve("api/suggestion-reminder.js"), "utf8");
 
+const titles0 = new Set(contract.songs.map((song) => song.title));
 const checks = [];
 const check = (name, condition) => {
   if (!condition) throw new Error(`FAIL ${name}`);
@@ -54,7 +55,11 @@ const exposedLevels = Object.keys(contract.finder.levelSongs);
 check("finder exposes only physical difficulty channels", exposedLevels.length === physicalLevels.size && exposedLevels.every((level) => physicalLevels.has(level)) && !contract.finder.levelSongs.S26 && !contract.finder.levelSongs.D28);
 check("search results fold chart aliases into OVER labels", appSource.includes("function chartLabels") && appSource.includes("levelLabel(folds[chart] ?? chart, folds)"));
 check("typing from any tab opens search results", appSource.includes('if (value.trim()) setTab("search")'));
-check("song selection aligns viewport to search", appSource.includes('searchRef.current?.scrollIntoView({ block: "start"'));
+check("song selection aligns viewport to search", appSource.includes('closest(".search-box") ?? searchRef.current)?.scrollIntoView({ block: "start"'));
+check("search box sits under hearts and is a search field", appSource.indexOf("<CreditControl") < appSource.indexOf("<SearchBox ref") && appSource.includes('type="search"') && appSource.includes("onFocus={scrollToSearchSoon}"));
+check("search results start without a count header", !appSource.includes("곡을 가까운 순서로 찾았어"));
+check("basic mode lists 33 official songs", contract.finder.modeSongs?.["베이직 모드"]?.length === 33 && contract.finder.modeSongs["베이직 모드"][0] === "고민중독" && contract.finder.modeSongs["베이직 모드"].every((title) => titles0.has(title)));
+check("online matching lists 16 level bands without songs", contract.finder.modeRows?.["온라인 매칭"]?.length === 16 && contract.finder.modeRows["온라인 매칭"][15] === "더블 27 OVER");
 check("leaving song detail clears shared URL state", appSource.includes('url.searchParams.delete("song")') && appSource.includes('if (next !== "search") clearSongFromUrl()'));
 check("browser back restores search state", appSource.includes('history.pushState(null, "", `?song=${encodeURIComponent(title)}`)') && appSource.includes('window.addEventListener("popstate", restoreUrlState)'));
 check("suggestions are described as private", feedbackSource.includes("건의 내용은 공개되지 않아") && feedbackSource.includes("관리자만 확인"));

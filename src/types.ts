@@ -33,6 +33,8 @@ export interface FinderData {
   categoryMirrors?: Record<string, string>;
   channelSongs: Record<string, string[]>;
   coopSongs: Array<{ t: string; n: number; people?: string }>;
+  modeSongs?: Record<string, string[]>;
+  modeRows?: Record<string, string[]>;
   levelSongs: Record<string, FinderEntry[]>;
   levelTotals: Record<string, PositionSet>;
   subs: Record<string, string[]>;
