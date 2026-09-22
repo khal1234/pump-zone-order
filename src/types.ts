@@ -16,7 +16,7 @@ export interface FinderEntry {
 
 export interface NavIndex {
   alias: Record<string, string>;
-  cats: Record<string, Array<{ tile: string; pos: number; total: number }>>;
+  cats: Record<string, Array<{ tile: string; pos: number; total: number; src?: string; seen?: string }>>;
   channel: Record<string, { kind: string; pos: number; total: number; fix?: boolean }>;
   chartsOf: Record<string, string[]>;
   levels: Record<string, PositionSet>;

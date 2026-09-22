@@ -464,7 +464,13 @@ function neighborTriplet(contract: PublicContract, location: LocationItem, title
 
 function evidenceFor(contract: PublicContract, title: string): EvidenceRow[] {
   const seen = new Set<string>();
-  return Object.values(contract.evidence).flat().filter((row) => row.title === title).filter((row) => {
+  const original = (contract.navIndex.cats[title] ?? [])
+    .filter((row) => row.tile === "ORIGINAL" && row.src)
+    .map((row) => ({
+      title, zone: "ORIGINAL", position: String(row.pos), grade: row.src ?? "",
+      source: row.seen === "닻 밀림" ? "인접 확인 지점에서 계산한 위치" : "",
+    }));
+  return [...original, ...Object.values(contract.evidence).flat().filter((row) => row.title === title)].filter((row) => {
     const key = `${row.zone}|${row.position}|${row.grade}|${row.source ?? ""}`;
     if (seen.has(key)) return false;
     seen.add(key); return true;

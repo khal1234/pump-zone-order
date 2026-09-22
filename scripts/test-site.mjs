@@ -29,6 +29,9 @@ check("all song titles are unique", contract.songs.length === new Set(contract.s
 check("site consumes common search", appSource.includes("NAV_SEARCH.rankTitles") && !appSource.includes("function normalize"));
 check("offline cache is explicit", dataSource.includes('state: "cached"') && appSource.includes("오프라인 저장본"));
 check("no personal/local markers", !/c:\\users|d:\\xsanity|play_history|my_records|credential/i.test(JSON.stringify(contract)));
+const originalAnchorShift = contract.navIndex.cats["러브 이즈 어 데인저 존 2 (Try To B.P.M)"]?.find((row) => row.tile === "ORIGINAL");
+check("ORIGINAL inferred positions retain their evidence grade", originalAnchorShift?.pos === 269 && originalAnchorShift.src === "구간확정" && originalAnchorShift.seen === "닻 밀림");
+check("ORIGINAL evidence is visible in song details", appSource.includes('row.tile === "ORIGINAL" && row.src') && appSource.includes("인접 확인 지점에서 계산한 위치"));
 const s17 = contract.finder.levelSongs.S17;
 check("level positions preserve RANDOM slot", s17[0].f.all === 2 && contract.navIndex.levelTotals.S17.all === Math.max(...s17.map((row) => row.f.all)));
 check("UI explains screen number convention", appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("기기 화면 번호 그대로"));
