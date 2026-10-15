@@ -46,8 +46,9 @@ check("premium-only song cannot leak through static categories", appSource.inclu
 check("NEW TUNES mirrors latest series", contract.finder.categoryMirrors?.["NEW TUNES"] === "PHOENIX 2" && appSource.includes("finder.categoryMirrors"));
 const p2 = contract.finder.seriesSongs["PHOENIX 2"];
 const expectedP2 = (filter) => p2.filter((entry) => entry.f[filter]).map((entry) => `${entry.f[filter]}:${entry.t}`);
-check("NEW TUNES normal equals PHOENIX 2 normal", expectedP2("normal").length === 22 && expectedP2("normal").at(-1) === "22:슈퍼☆하라구로☆팝");
-check("NEW TUNES premium equals PHOENIX 2 premium", expectedP2("all").length === 25 && expectedP2("all").at(-1) === "25:슈퍼☆하라구로☆팝");
+// 2026-10-16 닉2 2차 신곡 6곡(그중 피살리스 프리미엄) — 노멀 22→27 · 프리미엄 25→31
+check("NEW TUNES normal equals PHOENIX 2 normal", expectedP2("normal").length === 27 && expectedP2("normal").at(-1) === "27:슈퍼☆하라구로☆팝");
+check("NEW TUNES premium equals PHOENIX 2 premium", expectedP2("all").length === 31 && expectedP2("all").at(-1) === "31:슈퍼☆하라구로☆팝");
 check("sparse category positions stay absolute", appSource.includes("function categoryEntries") && appSource.includes("position: category.pos") && appSource.includes("곳 확인 · 전체"));
 check("difficulty browser uses physical folded channels", appSource.includes('finder.subs["DIFFICULTY ZONE SINGLE"]') && appSource.includes("function levelLabel") && appSource.includes("seenLevelChannels"));
 const physicalLevels = new Set([
