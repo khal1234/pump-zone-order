@@ -530,3 +530,9 @@ button.duo span.on { background: var(--mint); color: #082019; }
 button.duo span { white-space: nowrap; padding: 0 10px; }
 .mode-control.single button.duo { min-width: 0; }
 .heart-buttons button.locked { opacity: .35; }
+/* 10-16 «노말을 약간 위로 프리미엄을 약간 아래로 사선으로 · 싱글 더블도 · 둘이 스위칭이다 라는거 인식하기 좋게» */
+button.duo { padding: 7px 3px; gap: 2px; }
+button.duo span { min-height: 30px; }
+button.duo span:first-child { transform: translateY(-5px); }
+button.duo span:last-child { transform: translateY(5px); }
+.side-toggle button.duo span { min-height: 26px; }
