@@ -62,7 +62,7 @@ check("finder exposes only physical difficulty channels", exposedLevels.length =
 check("search results fold chart aliases into OVER labels", appSource.includes("function chartLabels") && appSource.includes("levelLabel(folds[chart] ?? chart, folds)"));
 check("typing from any tab opens search results", appSource.includes('if (value.trim()) setTab("search")'));
 check("song selection aligns viewport to search", appSource.includes('closest(".search-box") ?? searchRef.current)?.scrollIntoView({ block: "start"'));
-check("search box sits under hearts and is a search field", appSource.indexOf("<CreditControl") < appSource.indexOf("<SearchBox ref") && appSource.includes('type="search"') && appSource.includes("onFocus={scrollToSearchSoon}"));
+check("search box sits under hearts and is a search field", appSource.indexOf("<CreditControl") < appSource.indexOf("<SearchBox ref") && appSource.includes('type="search"') && !appSource.includes("scrollToSearchSoon"));  // 10-16 «검색은 스크롤 안나오게» — 검색 묶음이 고정이라 입력 때 화면을 굴리지 않는다
 check("search results start without a count header", !appSource.includes("곡을 가까운 순서로 찾았어"));
 check("basic mode lists 33 official songs", contract.finder.modeSongs?.["베이직 모드"]?.length === 33 && contract.finder.modeSongs["베이직 모드"][0] === "고민중독" && contract.finder.modeSongs["베이직 모드"].every((title) => titles0.has(title)));
 check("online matching lists 16 level bands without songs", contract.finder.modeRows?.["온라인 매칭"]?.length === 16 && contract.finder.modeRows["온라인 매칭"][15] === "더블 27 OVER");

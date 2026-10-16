@@ -318,11 +318,6 @@ export default function App() {
     }));
   }
 
-  function scrollToSearchSoon() {
-    scrollToSearch();
-    window.setTimeout(scrollToSearch, 350);
-  }
-
   function clearSongFromUrl() {
     const url = new URL(location.href);
     url.searchParams.delete("song");
@@ -421,7 +416,7 @@ export default function App() {
       <main>
         <section className="hero">
                     <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
-          <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} onFocus={scrollToSearchSoon} />
+          <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} />
         </section>
 
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
@@ -443,10 +438,10 @@ export default function App() {
   );
 }
 
-const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: string): void; clear(): void; onFocus(): void }>(function SearchBox({ query, setQuery, clear, onFocus }, ref) {
+const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: string): void; clear(): void }>(function SearchBox({ query, setQuery, clear }, ref) {
   return <form className="search-box" role="search" onSubmit={(event) => { event.preventDefault(); (event.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur(); }}>
     <Icon name="search" />
-    <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} onFocus={onFocus} placeholder="곡 이름을 입력하세요" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
+    <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="곡 이름을 입력하세요" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
     {query && <button onClick={clear} aria-label="검색어 지우기"><Icon name="close" /></button>}
     <kbd>⌘ K</kbd>
   </form>;

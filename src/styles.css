@@ -484,3 +484,8 @@ main { padding-top: 12px; }
 /* 10-16 «Level 과 S2 크기가 달라 이질적이야 같게 해 색이랑 · 붙여» — 한 낱말처럼 같은 글꼴·크기·색 */
 .zone-title { gap: 0.3em; align-items: baseline; }
 .zone-title span, .zone-title h2 { color: var(--text); font: 800 22px/1 "DM Sans", sans-serif; letter-spacing: 0; }
+/* 10-16 «검색은 스크롤 안나오게 해 / 왜 화면이 자꾸 아래로 내릴 수 있게 하는지» — 폰 브라우저의 100vh 는 주소창이 숨었을 때 높이라
+   보이는 화면보다 커서 스크롤이 생겼다. 보이는 높이(svh)로 바꾸고, 입력 중 결과칸을 화면 높이로 늘리던 것도 뺀다. */
+body { min-height: 100svh; }
+.app-shell, .app-shell.zone-open { min-height: 100svh; }
+.content.searching { min-height: 0; }
