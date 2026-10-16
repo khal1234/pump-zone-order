@@ -220,6 +220,7 @@ export default function App() {
   const [returnZone, setReturnZone] = useState(false);
   // 10-16 «검색으로 들어가면 위치 좌우는 굳이 나올 필요 없어 · 존에서 눌러 들어가면 그 존과 관련시켜 좌우 곡» — 곡을 연 존
   const [songZone, setSongZone] = useState<ZoneSelection | null>(null);
+  const [tourOpen, setTourOpen] = useState(false);
   const pendingScroll = useRef<number | "first" | null>(null);
   const scrollTopNext = useRef(false);
   const pendingSongScroll = useRef<number | null>(null);
@@ -459,6 +460,8 @@ export default function App() {
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
         </button>
+        {/* 10-16 «존 파인더 우측에 ? 누르면 가이드 · 버튼 어떤 순서대로 누르면 어떻게 동작하는지 하이라이트 느낌으로 순차적으로» */}
+        <button className="help-button" onClick={() => { goHome(); setTourOpen(true); }} aria-label="사용 안내">?</button>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
@@ -471,6 +474,7 @@ export default function App() {
         </div>
       </header>
 
+      {tourOpen && <Tour onClose={() => setTourOpen(false)} />}
       {updateReady && <div className="update-banner"><span>새 버전이 있습니다</span><button onClick={() => location.reload()}>새로고침</button></div>}
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
@@ -712,4 +716,52 @@ function LoadingState() {
 
 function FatalState({ message }: { message: string }) {
   return <div className="state-screen error"><div className="brand-mark"><span>↖</span><b>!</b><span>↗</span></div><h1>데이터를 열지 못했습니다</h1><p>{message}</p><button onClick={() => location.reload()}>다시 불러오기</button></div>;
+}
+
+// 사용 안내 — 첫 화면의 단추를 쓰는 순서대로 하나씩 밝혀 보여 준다(목표 단추가 없으면 그 단계는 건너뛴다).
+const TOUR_STEPS: Array<{ target: string; title: string; body: string }> = [
+  { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다." },
+  { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
+  { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 치면 결과가 나오고, 곡을 누르면 그 곡이 있는 모든 존과 기기 번호가 나옵니다." },
+  { target: ".side-toggle", title: "④ 싱글 / 더블", body: "난이도존 목록을 싱글과 더블 사이에서 바꿉니다." },
+  { target: ".zone-grid", title: "⑤ 존 고르기", body: "존을 누르면 기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 곡을 누르면 그 곡의 다른 위치도 볼 수 있습니다." },
+  { target: ".recent-strip", title: "⑥ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
+  { target: "button.brand", title: "⑦ 처음으로", body: "어디서든 왼쪽 위 로고를 누르면 이 첫 화면으로 돌아옵니다." },
+];
+
+function Tour({ onClose }: { onClose(): void }) {
+  // 그린 뒤에 고른다 — 다른 화면에서 «?» 를 누르면 첫 화면이 같은 순간에 그려지므로 그리기 전 DOM 으로는 못 찾는다.
+  const [steps, setSteps] = useState<typeof TOUR_STEPS>([]);
+  useLayoutEffect(() => { setSteps(TOUR_STEPS.filter((item) => document.querySelector(item.target))); }, []);
+  const [index, setIndex] = useState(0);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const step = steps[index];
+  useLayoutEffect(() => {
+    if (!step) return;
+    const el = document.querySelector<HTMLElement>(step.target);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "instant" });
+    const measure = () => setRect(el.getBoundingClientRect());
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, { passive: true });
+    return () => { window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure); };
+  }, [step]);
+  if (!step) return null;
+  const last = index === steps.length - 1;
+  const pad = 6;
+  const below = !rect || rect.bottom + 190 < window.innerHeight;
+  return <div className="tour" role="dialog" aria-label="사용 안내">
+    {rect && <div className="tour-spot" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />}
+    <div className="tour-card" style={rect ? (below ? { top: rect.bottom + pad + 10 } : { top: Math.max(8, rect.top - pad - 10 - 170) }) : { top: 80 }}>
+      <small>{index + 1} / {steps.length}</small>
+      <b>{step.title}</b>
+      <p>{step.body}</p>
+      <div className="tour-actions">
+        <button onClick={onClose}>닫기</button>
+        {index > 0 && <button onClick={() => setIndex(index - 1)}>이전</button>}
+        <button className="primary" onClick={() => (last ? onClose() : setIndex(index + 1))}>{last ? "끝" : "다음"}</button>
+      </div>
+    </div>
+  </div>;
 }
