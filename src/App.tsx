@@ -610,7 +610,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : contract.finder.modeRows?.[zone.key] ? `${rows.length}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><div className="zone-head"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
       {/* 10-16 «124곡 · 프리미엄 전체 곡 이거 빼고 S20을 level 옆에 붙이고 level 을 존 목록 버튼 약간 옆으로» — 한 줄 머리 */}
-      <div className="zone-title" title={`${countLabel} · ${FILTERS.find((item) => item.key === filter)?.label}`}><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div></div>
+      <div className="zone-title" title={`${countLabel} · ${FILTERS.find((item) => item.key === filter)?.label}`}>{/* 10-16 «LEVEL 빼고 S8만 · SERIES·CATEGORY 도 빼고» */}<h2>{zone.label}</h2></div></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
       // 10-16 «무한 스크롤 하니까 오히려 불편하네 · 위아래로 1세트씩 · 1 바로 위에 xx 후 1까지» — 목록을 위·가운데·아래 세 벌만 깔고
       // 가운데 벌 첫 곡에서 시작한다. 위로 올리면 마지막 번호부터 거꾸로, 아래로 내리면 한 바퀴 더 나오고 끝난다.
