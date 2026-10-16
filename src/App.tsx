@@ -443,6 +443,7 @@ export default function App() {
 
   // 안내 예시 곡 — 싱글 난이도존에 여러 번 나오는 곡(노스텔지어: S3·S5·S8 …)
   const TOUR_SONG = "노스텔지어";
+  function tourHome() { goHome(); scrollTopNext.current = false; }
   function tourSteps(): TourStep[] {
     const songZone = (): ZoneSelection | null => {
       const first = locationsFor(contract!, TOUR_SONG, filter).find((item) => item.kind === "level");
@@ -452,13 +453,13 @@ export default function App() {
     // 같은 사용자 «그리고 S3(S4)만 가리켜» — ⑤ 는 상자 전체가 아니라 그 단추 하나만 밝힌다(첫 단추 = 예시 곡의 첫 싱글 존).
     const exampleZone = songZone()?.label ?? "S3";
     return [
-      { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다.", do: () => goHome() },
+      { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다.", do: () => tourHome() },
       { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
-      { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => goHome() },
+      { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => tourHome() },
       { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
       { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
-      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); } } },
-      { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => goHome() },
+      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; } } },
+      { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => tourHome() },
       { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
       { target: ".recent-strip", title: "⑨ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
       { target: "button.brand", title: "⑩ 처음으로", body: "어디서든 왼쪽 위 로고를 누르면 이 첫 화면으로 돌아옵니다." },
@@ -494,7 +495,7 @@ export default function App() {
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
         </button>
         {/* 10-16 «존 파인더 우측에 ? 누르면 가이드 · 버튼 어떤 순서대로 누르면 어떻게 동작하는지 하이라이트 느낌으로 순차적으로» */}
-        <button className="help-button" onClick={() => setTourOpen(true)} aria-label="사용 안내">?</button>
+        <button className="help-button" onClick={() => { tourHome(); setTourOpen(true); }} aria-label="사용 안내">?</button>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
@@ -756,62 +757,51 @@ function FatalState({ message }: { message: string }) {
 type TourStep = { target: string | (() => Element | null); title: string; body: string; do?: () => void };
 
 function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
+  // 10-16 «닫았다 여는 그거 자체를 못 없애? 왜 의도적으로 틈을 만드는지 · 이동된 걸로 화면 확 바뀌어도 되잖아» —
+  //   단계의 할 일(do)은 «다음» 을 누른 그 순간에 하고, 화면이 그려진 직후·칠하기 전(layout effect)에 재서 같은 장면에 띄운다.
+  //   숨기는 틈도, 움직이는 효과도 없다. 앱 쪽 «맨 위로/첫 곡으로» 스크롤 예약은 안내가 지운다(do 안에서).
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
-  const [dir, setDir] = useState(1);
   const step = steps[index];
-  // 10-16 «설명이 스크롤이 위로 끌올됐다 내려갔다 올라갔다 하냐» — 스크롤마다 다시 재서 카드가 위·아래로 뒤집히던 것.
-  //   안내 중엔 화면 스크롤을 잠그고, 단계마다 한 번만(필요할 때만) 옮긴 뒤 한 번 잰다.
-  // 10-16 재발 «계속 왔다갔다 · 설명할 위치에 딱 위치시키면 안 되나» — 단계 사이에 카드가 맨 위(80px)로 갔다 오던 것(setRect(null)),
-  //   밝힘 칸이 0.25초 미끄러지던 것, 폰에서 주소창이 들락날락하며 생긴 resize 로 카드가 위·아래로 뒤집히던 것을 다 뺀다.
-  //   새 위치를 잰 뒤에 한 번에 바꾸고, 폭이 바뀔 때만 다시 잰다.
-  //   안내 중 손가락·휠 스크롤은 막는다(overflow 잠금은 폰 주소창을 흔들어 쓰지 않는다).
   useEffect(() => {
     const block = (event: Event) => { if (!(event.target as Element)?.closest?.(".tour-card")) event.preventDefault(); };
     window.addEventListener("touchmove", block, { passive: false });
     window.addEventListener("wheel", block, { passive: false });
     return () => { window.removeEventListener("touchmove", block); window.removeEventListener("wheel", block); };
   }, []);
-  useEffect(() => {
+  function go(next: number, dir: number) {
+    // 목표가 없는 단계(최근 찾기가 빈 사람 등)는 건너뛴다 — 할 일을 해 봐야 알 수 있는 것은 그린 뒤 다시 본다
+    if (next < 0 || next >= steps.length) { onClose(); return; }
+    steps[next].do?.();
+    setIndex(next);
+    setDirRef.current = dir;
+  }
+  const setDirRef = useRef(1);
+  useLayoutEffect(() => {
     if (!step) return;
-    step.do?.();
-    let el: Element | null = null;
-    let width = window.innerWidth;
-    const measure = () => { if (el) setRect(el.getBoundingClientRect()); };
-    const onResize = () => { if (window.innerWidth !== width) { width = window.innerWidth; measure(); } };
-    // 할 일이 화면을 다시 그린 뒤에 목표를 찾는다
-    // 10-16 «다음 이동할 때 그냥 순식간에 닫고 이동된 거 빵 뜨고 · 6에서 7로 갈 때 구분동작 보이는 게 불편» —
-    //   넘기는 순간 밝힘·카드를 숨기고(rect=null), 화면을 바로 옮긴 뒤, 새 자리에 한 번에 띄운다(움직이는 애니메이션 없음).
-    setRect(null);
-    const timer = window.setTimeout(() => {
-      el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
-      if (!el) { const next = index + dir; if (next >= 0 && next < steps.length) setIndex(next); else onClose(); return; }
-      const r = el.getBoundingClientRect();
-      // 고정 머리(검색 묶음 · 존 머리 · 곡 머리) 밑에 오게 — 존 머리에 가려 ⑥ 이 안 보이던 것
-      const heroBottom = Math.max(0, ...[".hero", ".zone-head", ".detail-head"].map((sel) => document.querySelector(sel)?.getBoundingClientRect().bottom ?? 0));
-      if (r.top < heroBottom || r.bottom > window.innerHeight - 200) {
-        window.scrollTo({ top: Math.max(0, window.scrollY + r.top - heroBottom - 12), behavior: "instant" });
-      }
-      measure();
-    }, 30);
-    window.addEventListener("resize", onResize);
-    return () => { window.clearTimeout(timer); window.removeEventListener("resize", onResize); };
+    const el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
+    if (!el) { go(index + setDirRef.current, setDirRef.current); return; }
+    const r = el.getBoundingClientRect();
+    const headBottom = Math.max(0, ...[".hero", ".zone-head", ".detail-head"].map((sel) => document.querySelector(sel)?.getBoundingClientRect().bottom ?? 0));
+    if (r.top < headBottom || r.bottom > window.innerHeight - 200) {
+      window.scrollTo({ top: Math.max(0, window.scrollY + r.top - headBottom - 12), behavior: "instant" });
+    }
+    setRect(el.getBoundingClientRect());
   }, [index]);
-  if (!step) return null;
-  if (!rect) return <div className="tour" />;  // 넘기는 사이: 아무것도 안 보이게(화면 터치만 막는다)
+  if (!step || !rect) return null;
   const last = index === steps.length - 1;
   const pad = 6;
-  const below = !rect || rect.bottom + 190 < window.innerHeight;
+  const below = rect.bottom + 190 < window.innerHeight;
   return <div className="tour" role="dialog" aria-label="사용 안내">
-    {rect && <div className="tour-spot" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />}
-    <div className="tour-card" style={rect ? (below ? { top: rect.bottom + pad + 10 } : { top: Math.max(8, rect.top - pad - 10 - 170) }) : { top: 80 }}>
+    <div className="tour-spot" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />
+    <div className="tour-card" style={below ? { top: rect.bottom + pad + 10 } : { top: Math.max(8, rect.top - pad - 10 - 170) }}>
       <small>{index + 1} / {steps.length}</small>
       <b>{step.title}</b>
       <p>{step.body}</p>
       <div className="tour-actions">
         <button onClick={onClose}>닫기</button>
-        {index > 0 && <button onClick={() => { setDir(-1); setIndex(index - 1); }}>이전</button>}
-        <button className="primary" onClick={() => { if (last) onClose(); else { setDir(1); setIndex(index + 1); } }}>{last ? "끝" : "다음"}</button>
+        {index > 0 && <button onClick={() => go(index - 1, -1)}>이전</button>}
+        <button className="primary" onClick={() => (last ? onClose() : go(index + 1, 1))}>{last ? "끝" : "다음"}</button>
       </div>
     </div>
   </div>;
