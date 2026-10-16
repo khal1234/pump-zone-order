@@ -502,3 +502,13 @@ body { min-height: 100svh; }
 .side-toggle { display: inline-flex; gap: 4px; margin-left: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; }
 .side-toggle button { min-width: 56px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; cursor: pointer; }
 .side-toggle button.active { background: var(--mint); color: #082019; }
+/* 10-16 «난이도존·시리즈존·카테고리 사이 여백 · 제목–노말 · 노말–곡 검색 · 곡 검색과 그 밑 여백 좀 더 줄여» */
+:root { --gap: clamp(5px, 1.2svh, 12px); }
+.zone-group { margin-bottom: 0; }
+.zone-group + .zone-group { margin-top: 8px; }
+.zone-group-title { margin-bottom: 6px; }
+.app-shell .hero { padding-top: 2px; padding-bottom: 4px; margin-bottom: 4px; }
+@media (max-width: 560px) {
+  .topbar { height: 42px; }
+  main { padding-top: 0; }
+}
