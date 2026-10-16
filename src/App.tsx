@@ -407,6 +407,8 @@ export default function App() {
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
           </div>
+          {/* 10-16 «맨 아래 PHOENIX 2·계약·총 곡수 필요없잖아 / 익명 건의 관리는 맨 우측 상단 다크 모드 왼쪽에 약간 띄워서» */}
+          <div className="top-links"><button onClick={() => setFeedbackOpen(true)}>익명 건의</button><button onClick={openAdmin}>관리</button></div>
           <button className="icon-button" onClick={() => setLight((value) => !value)} aria-label={light ? "어두운 테마" : "밝은 테마"}>
             <Icon name={light ? "moon" : "sun"} />
           </button>
@@ -431,10 +433,6 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="data-footer">
-        <span>{contract.game.contentThrough}</span><span>계약 {contract.contentHash.slice(0, 12)}</span><span>{contract.songs.length}곡</span>
-        <button onClick={() => setFeedbackOpen(true)}>익명 건의</button><button onClick={openAdmin}>관리</button>
-      </footer>
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {adminOpen && <FeedbackAdmin onClose={closeAdmin} />}
       <nav className="bottom-nav" aria-label="주요 메뉴">
@@ -506,7 +504,6 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
   const active = locations.find((item) => item.id === activeId) ?? locations[0];
   const neighbors = active ? neighborTriplet(contract, active, title, filter) : [];
   const evidence = evidenceFor(contract, title);
-  const songId = contract.songs.find((song) => song.title === title)?.id;
   const routeGroups = [
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
@@ -522,11 +519,12 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
   }
 
   return <article className="detail-view">
-    <div className="detail-top">
+    {/* 10-16 «결과로 공유도 스크롤 내리면 위에 고정 · piu-644 이건 왜 띄우는거야» — 버튼·곡 이름 한 줄을 검색 묶음 밑에 고정, 곡 번호는 뺀다 */}
+    <div className="detail-head">
       <button className="back-button" onClick={onBack}><Icon name="back" /> 결과로</button>
+      <h2>{title}</h2>
       <button className="share-button" onClick={() => void share()}><Icon name="share" /> 공유</button>
     </div>
-    <div className="title-block"><p>SONG LOCATION</p><h2>{title}</h2><span>{songId}</span></div>
     {locations.length ? <>
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>

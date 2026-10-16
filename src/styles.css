@@ -473,3 +473,11 @@ main { padding-top: 12px; }
   .zone-grid.wide button { padding: 8px 2px; overflow: hidden; }
   .zone-grid.wide strong { display: inline-block; white-space: nowrap; transform-origin: center; overflow: visible; text-overflow: clip; max-width: none; flex: none; }
 }
+/* 익명 건의·관리 — 맨 위 오른쪽, 테마 버튼 왼쪽 */
+.top-links { display: flex; align-items: center; gap: 10px; margin-right: 10px; }
+.top-links button { white-space: nowrap; padding: 6px 2px; border: 0; background: transparent; color: var(--mint); font: 700 11px "DM Sans", sans-serif; cursor: pointer; }
+.top-links button + button { color: var(--muted); }
+.top-actions { display: flex; align-items: center; }
+.detail-head { position: sticky; top: var(--hero-h, 0px); z-index: 5; display: flex; align-items: center; gap: 10px; padding: 4px 0 8px; background: var(--bg); }
+.detail-head .back-button, .detail-head .share-button { margin: 0; flex: none; }
+.detail-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
