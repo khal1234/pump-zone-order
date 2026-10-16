@@ -458,3 +458,9 @@ main { padding-top: 12px; }
 .app-shell .hero { position: sticky; top: 0; z-index: 6; background: var(--bg); padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px; }
 .hero-eyebrow { max-width: 780px; margin: 0 auto 4px; }
 .zone-head { position: sticky; top: var(--hero-h, 0px); z-index: 5; background: var(--bg); padding-bottom: 6px; }
+/* 존 머리 한 줄: [‹ 존 목록]  LEVEL S20 */
+.zone-head { display: flex; align-items: center; gap: 14px; padding-top: 2px; }
+.zone-head .back-button { margin: 0; flex: none; }
+.zone-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.zone-title span { color: var(--mint); font: 700 11px/1 "DM Sans", sans-serif; letter-spacing: .18em; }
+.zone-title h2 { margin: 0; font-size: 24px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

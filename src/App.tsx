@@ -593,7 +593,8 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     const categoryTotal = category.reduce((max, row) => Math.max(max, row.total), 0);
     const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : contract.finder.modeRows?.[zone.key] ? `${rows.length}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><div className="zone-head"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
-      <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div></div>
+      {/* 10-16 «124곡 · 프리미엄 전체 곡 이거 빼고 S20을 level 옆에 붙이고 level 을 존 목록 버튼 약간 옆으로» — 한 줄 머리 */}
+      <div className="zone-title" title={`${countLabel} · ${FILTERS.find((item) => item.key === filter)?.label}`}><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
       <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
     </div>;
