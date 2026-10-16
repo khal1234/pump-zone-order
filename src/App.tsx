@@ -20,7 +20,6 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
 ];
 type CreditMode = "normal" | "premium";
 type ZoneGroupKey = "single" | "double" | "series" | "category";
-type ZoneTabKey = "level" | "series" | "category";   // 10-16 사용자 «싱글 바로 아래에 더블로 한눈에 보게 해» — 싱글·더블을 한 탭에
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
@@ -511,7 +510,6 @@ function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
-  const [group, setGroup] = useState<ZoneTabKey>("level");
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
     const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
@@ -550,13 +548,9 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
     category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: isMode(key) ? key : `${key} 채널` }) },
   };
-  const tabTitle: Record<ZoneTabKey, string> = { level: "난이도존", series: "시리즈존", category: "카테고리" };
-  const shown: ZoneGroupKey[] = group === "level" ? ["single", "double"] : [group];
+  const shown: ZoneGroupKey[] = ["single", "double", "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
   return <>
     <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 됩니다.</p></div>
-    <div className="zone-tabs" role="tablist" aria-label="존 종류">
-      {(["level", "series", "category"] as ZoneTabKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{tabTitle[key]}</button>)}
-    </div>
     {shown.map((key) => <ZoneGroup key={key} title={groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount />)}
   </>;
 }
