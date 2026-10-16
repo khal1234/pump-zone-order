@@ -496,7 +496,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
       <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없어.</p></div> :
-      <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span><em>→</em></button>)}</div>}
+      <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
     </div>;
   }
   const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
@@ -532,7 +532,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     <div className="zone-tabs" role="tablist" aria-label="존 종류">
       {(["single", "double", "series", "category"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
     </div>
-    <ZoneGroup title={activeGroup.title} color={activeGroup.color} items={activeGroup.items} choose={activeGroup.choose} />
+    <ZoneGroup title={activeGroup.title} color={activeGroup.color} items={activeGroup.items} choose={activeGroup.choose} wide={group === "series" || group === "category"} />
   </>;
 }
 
@@ -541,9 +541,9 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
   return listFor(contract, fake, filter);
 }
 
-function ZoneGroup({ title, color, items, choose }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void }) {
+function ZoneGroup({ title, color, items, choose, wide }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean }) {
   return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3><small>{items.length}개</small></div>
-    <div className="zone-grid">{items.map((item) => <button key={item.key} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span><em>→</em></button>)}</div>
+    <div className={wide ? "zone-grid wide" : "zone-grid"}>{items.map((item) => <button key={item.key} className={!wide && (item.label ?? item.key).length > 4 ? "span2" : undefined} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span></button>)}</div>
   </section>;
 }
 

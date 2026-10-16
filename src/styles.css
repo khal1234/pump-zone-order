@@ -291,3 +291,23 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .zone-row-static { min-height: 40px; display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; padding: 6px 13px; border: 1px dashed var(--line); border-radius: 12px; }
 .zone-row-static b { color: var(--mint); font: 700 13px "DM Sans", sans-serif; }.zone-row-static span { font-size: 12px; }
 .zone-note { margin: 6px 2px 0; color: var(--muted); font-size: 11px; }
+
+/* 2026-10-16 사용자 «위아래 높이 좌우 높이 최대한 줄여봐 · S1 xx곡만 있어도 되잖아 이걸 2줄 말고 1줄로 하고 화살표도 없애» — 존 칸을 한 줄 칩으로 */
+.zone-grid { gap: 6px; }
+.zone-grid button { display: flex; align-items: baseline; gap: 6px; padding: 8px 10px; border-radius: 10px; }
+.zone-grid strong { font-size: 13px; flex: none; }
+.zone-grid span { margin-top: 0; font-size: 10px; }
+@media (max-width: 560px) {
+  .zone-grid { grid-template-columns: repeat(4, 1fr); }
+  .zone-grid button { padding: 7px 8px; gap: 4px; }
+}
+.zone-grid strong { flex: 0 1 auto; min-width: 0; }
+.zone-grid span { flex: none; }
+.zone-grid.wide { grid-template-columns: repeat(4, 1fr); }
+/* 존 안 곡 줄도 같은 결로 — 화살표 빼고 높이 줄임(10-16 «다른 애들도») */
+.zone-song-list { gap: 4px; }
+.zone-song-list button { min-height: 0; grid-template-columns: 40px 1fr; gap: 8px; padding: 7px 11px; border-radius: 10px; }
+@media (max-width: 560px) {
+  .zone-grid.wide { grid-template-columns: repeat(2, 1fr); }
+}
+.zone-grid button.span2 { grid-column: span 2; }   /* «S25 OVER» 처럼 4글자 넘는 레벨 이름은 두 칸 — 한 칸이면 말줄임 */
