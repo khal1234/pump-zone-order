@@ -489,3 +489,5 @@ main { padding-top: 12px; }
 body { min-height: 100svh; }
 .app-shell, .app-shell.zone-open { min-height: 100svh; }
 .content.searching { min-height: 0; }
+/* 10-16 «Level s2 아까 초록색 작은 글씨로 · 크니까 안예뻐» — 둘 다 옛 LEVEL 글씨(초록 작은 글씨)로 */
+.zone-title span, .zone-title h2 { color: var(--mint); font: 700 13px/1 "DM Sans", sans-serif; letter-spacing: .16em; }
