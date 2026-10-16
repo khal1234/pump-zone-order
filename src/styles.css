@@ -518,3 +518,15 @@ body { min-height: 100svh; }
 button.heart-count { border: 0; background: transparent; padding: 6px 4px; cursor: pointer; }
 /* 10-16 «시리즈존 위랑 카테고리 위에 여백 약간만 늘려봐» (8 → 14px) */
 .zone-group + .zone-group { margin-top: 14px; }
+/* 두 칸 한 버튼 — 고른 칸만 불 */
+button.duo { display: inline-flex; align-items: stretch; gap: 3px; padding: 3px; border: 0; border-radius: 11px; background: transparent; cursor: pointer; }
+button.duo span { display: flex; align-items: center; justify-content: center; padding: 0 12px; min-height: 36px; border-radius: 9px; color: var(--muted); font-weight: 700; font-size: 13px; }
+button.duo span.on { background: var(--mint); color: #082019; }
+.mode-control.single { padding: 0; }
+.mode-control.single button.duo { width: 100%; min-height: 44px; }
+.mode-control.single button.duo span { flex: 1; }
+.side-toggle { padding: 0; }
+.side-toggle button.duo span { min-height: 30px; }
+button.duo span { white-space: nowrap; padding: 0 10px; }
+.mode-control.single button.duo { min-width: 0; }
+.heart-buttons button.locked { opacity: .35; }
