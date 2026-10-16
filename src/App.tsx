@@ -478,16 +478,17 @@ const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: 
 function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: { mode: CreditMode; hearts: number; filter: FilterKey; onModeChange(value: CreditMode): void; onHeartsChange(value: number): void }) {
   const max = MODE_MAX[mode];
   return <div className="credit-control">
-    <div className="mode-control" aria-label="크레딧 종류">
-      <button className={mode === "normal" ? "active" : ""} onClick={() => onModeChange("normal")}><b>노말</b><small>4♥</small></button>
-      <button className={mode === "premium" ? "active" : ""} onClick={() => onModeChange("premium")}><b>프리미엄</b><small>6♥</small></button>
+    {/* 10-16 «노말/프리미엄 하나로 버튼 합치고 토글형으로 한번 누르면 다른 한쪽만 불 들어오게» */}
+    <div className="mode-control single" aria-label="크레딧 종류">
+      <button className="active" onClick={() => onModeChange(mode === "normal" ? "premium" : "normal")} aria-label={`${mode === "normal" ? "노말" : "프리미엄"} — 눌러서 바꾸기`}><b>{mode === "normal" ? "노말" : "프리미엄"}</b><small>{MODE_MAX[mode]}♥</small></button>
     </div>
     <div className="heart-control">
       <span className="heart-title">남은 하트</span>
       <div className="heart-buttons" role="group" aria-label={`남은 하트 ${hearts}개`}>
         {Array.from({ length: max }, (_, index) => index + 1).map((value) => <button key={value} className={value <= hearts ? "filled" : ""} onClick={() => onHeartsChange(value)} aria-label={`하트 ${value}개로 설정`} aria-pressed={value === hearts}>♥</button>)}
       </div>
-      <b className="heart-count">{hearts}/{max}</b>
+      {/* 10-16 «초기화는 말고 그냥 하트 수 누르는게 나을 듯» — 3/6 을 누르면 가득 채운다 */}
+      <button className="heart-count" onClick={() => onHeartsChange(max)} aria-label="하트 가득 채우기">{hearts}/{max}</button>
     </div>
   </div>;
 }
@@ -645,7 +646,8 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: isMode(key) ? key : `${key} 채널` }) },
   };
   const shown: ZoneGroupKey[] = [side, "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
-  const sideToggle = <div className="side-toggle"><button className={side === "single" ? "active" : ""} onClick={() => pickSide("single")}>싱글</button><button className={side === "double" ? "active" : ""} onClick={() => pickSide("double")}>더블</button></div>;
+  // 10-16 «싱글/더블로 여기도 토글형으로» — 버튼 하나, 누르면 다른 쪽
+  const sideToggle = <div className="side-toggle"><button className="active" onClick={() => pickSide(side === "single" ? "double" : "single")}>{side === "single" ? "싱글" : "더블"}</button></div>;
   return <>
     {shown.map((key) => <ZoneGroup key={key} title={key === side ? "난이도존" : groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount extra={key === side ? sideToggle : undefined} />)}
   </>;

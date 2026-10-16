@@ -512,3 +512,9 @@ body { min-height: 100svh; }
   .topbar { height: 42px; }
   main { padding-top: 0; }
 }
+/* 토글 한 칸: 노말/프리미엄 · 싱글/더블 */
+.mode-control.single { grid-template-columns: 1fr; }
+.mode-control.single button { min-width: 96px; }
+button.heart-count { border: 0; background: transparent; padding: 6px 4px; cursor: pointer; }
+/* 10-16 «시리즈존 위랑 카테고리 위에 여백 약간만 늘려봐» (8 → 14px) */
+.zone-group + .zone-group { margin-top: 14px; }
