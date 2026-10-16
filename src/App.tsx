@@ -337,7 +337,7 @@ export default function App() {
         return;
       }
       if (title) {
-        setQuery(title);
+        setQuery("");
         setTab("search");
         setZone(null);
         // 10-16 «S4 누르면 이동 후 본래로 돌아올 때 왜 스크롤 아래로 끌어당겨지냐» — 존 목록의 깊은 스크롤이 곡 화면에 남던 것.
@@ -397,7 +397,8 @@ export default function App() {
     setReturnZone(true);
     setSongZone(fromZone ? zone : null);
     setSelectedTitle(title);
-    setQuery(title);
+    // 10-16 «검색으로 곡 눌러서 들어가면 검색 목록 사라지게 · 다음 검색 때 x 안 누르고 그냥 칸 누를 수 있게» — 검색칸을 비운다
+    setQuery("");
     setTab("search");
     setZone(null);
     const next = [title, ...recent.filter((item) => item !== title)].slice(0, 12);
@@ -457,7 +458,7 @@ export default function App() {
       { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
       { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => tourHome() },
       { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
-      { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
+      { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(""); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
       { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; } } },
       { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => tourHome() },
       { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
