@@ -326,3 +326,16 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 }
 .quick-grid button strong { min-height: 0; line-height: 1.3; }
 .section-heading { margin-bottom: 12px; }
+/* 난이도존 탭 — 곡 수 없이 이름만(10-16 «곡수 날리고») · 싱글 아래 더블을 한 화면에 */
+.zone-grid.names { grid-template-columns: repeat(10, 1fr); }
+.zone-grid.names button { justify-content: center; padding: 8px 4px; }
+.zone-group + .zone-group { margin-top: 14px; }
+@media (max-width: 560px) {
+  .zone-grid.names { grid-template-columns: repeat(5, 1fr); }
+}
+/* 시리즈존·카테고리도 곡 수 없이 — 폰에서 한 줄 3칸(10-16 «얘넨 가로 3줄로») */
+.zone-grid.wide button { justify-content: center; padding: 8px 4px; }
+.zone-grid.wide strong { font-size: 12px; }
+@media (max-width: 560px) {
+  .zone-grid.wide { grid-template-columns: repeat(3, 1fr); }
+}

@@ -20,6 +20,7 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
 ];
 type CreditMode = "normal" | "premium";
 type ZoneGroupKey = "single" | "double" | "series" | "category";
+type ZoneTabKey = "level" | "series" | "category";   // 10-16 사용자 «싱글 바로 아래에 더블로 한눈에 보게 해» — 싱글·더블을 한 탭에
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
@@ -376,7 +377,7 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
 
 function SearchLanding({ onChoose, recent }: { onChoose(title: string): void; recent: string[] }) {
   return <>
-    <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아보세요</h2></div><p>오락실에서 한 손으로 누르기 좋은 예시입니다.</p></div>
+    <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아보세요</h2></div></div>
     <div className="quick-grid">{QUICK_TITLES.map((title, index) => <button key={title} onClick={() => onChoose(title)}><small>0{index + 1}</small><strong>{title}</strong></button>)}</div>
     {recent.length > 0 && <div className="inline-recents"><b>최근</b>{recent.slice(0, 5).map((title) => <button key={title} onClick={() => onChoose(title)}>{title}</button>)}</div>}
   </>;
@@ -485,7 +486,7 @@ function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
-  const [group, setGroup] = useState<ZoneGroupKey>("single");
+  const [group, setGroup] = useState<ZoneTabKey>("level");
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
     const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
@@ -524,13 +525,14 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
     category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: isMode(key) ? key : `${key} 채널` }) },
   };
-  const activeGroup = groups[group];
+  const tabTitle: Record<ZoneTabKey, string> = { level: "난이도존", series: "시리즈존", category: "카테고리" };
+  const shown: ZoneGroupKey[] = group === "level" ? ["single", "double"] : [group];
   return <>
     <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 됩니다.</p></div>
     <div className="zone-tabs" role="tablist" aria-label="존 종류">
-      {(["single", "double", "series", "category"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
+      {(["level", "series", "category"] as ZoneTabKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{tabTitle[key]}</button>)}
     </div>
-    <ZoneGroup title={activeGroup.title} color={activeGroup.color} items={activeGroup.items} choose={activeGroup.choose} wide={group === "series" || group === "category"} />
+    {shown.map((key) => <ZoneGroup key={key} title={groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount />)}
   </>;
 }
 
@@ -539,9 +541,9 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
   return listFor(contract, fake, filter);
 }
 
-function ZoneGroup({ title, color, items, choose, wide }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean }) {
-  return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3><small>{items.length}개</small></div>
-    <div className={wide ? "zone-grid wide" : "zone-grid"}>{items.map((item) => <button key={item.key} className={!wide && (item.label ?? item.key).length > 4 ? "span2" : undefined} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong><span>{item.countLabel ?? `${item.count}곡`}</span></button>)}</div>
+function ZoneGroup({ title, color, items, choose, wide, hideCount }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean; hideCount?: boolean }) {
+  return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3>{!hideCount && <small>{items.length}개</small>}</div>
+    <div className={wide ? "zone-grid wide" : "zone-grid names"}>{items.map((item) => <button key={item.key} className={!wide && (item.label ?? item.key).length > 4 ? "span2" : undefined} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong>{!hideCount && <span>{item.countLabel ?? `${item.count}곡`}</span>}</button>)}</div>
   </section>;
 }
 
@@ -560,7 +562,7 @@ function EmptyState({ title, copy }: { title: string; copy: string }) {
 }
 
 function LoadingState() {
-  return <div className="state-screen"><div className="brand-mark"><span>↖</span><b>P</b><span>↗</span></div><div className="loader"></div><p>위치 데이터를 맞추고 있어…</p></div>;
+  return <div className="state-screen"><div className="brand-mark"><span>↖</span><b>P</b><span>↗</span></div><div className="loader"></div><p>위치 데이터를 맞추고 있습니다…</p></div>;
 }
 
 function FatalState({ message }: { message: string }) {
