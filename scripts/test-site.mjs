@@ -35,7 +35,8 @@ check("ORIGINAL inferred positions retain their evidence grade", (originalAnchor
 check("song details hide the evidence panel", !appSource.includes("<EvidencePanel") && !appSource.includes("확인 정도"));
 const s17 = contract.finder.levelSongs.S17;
 check("level positions preserve RANDOM slot", s17[0].f.all === 2 && contract.navIndex.levelTotals.S17.all === Math.max(...s17.map((row) => row.f.all)));
-check("UI explains screen number convention", appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("기기 화면 번호 그대로"));
+// 10-16 사용자 «첫 곡과 마지막 곡은 … 기기 화면 번호 그대로 … 이건 빼» — 설명 문구 없이 번호만.
+check("song detail has no screen-number explainer", !appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("onOpenZone={openZoneFromSong}"));
 // 10-16 사용자 «새로고침해도 노말·프리미엄·하트 개수 유지» — 저장값이 없을 때만 노말 4하트.
 check("default credit is normal four hearts", appSource.includes(': "normal"; } catch { return "normal"; }') && appSource.includes("catch { return MODE_MAX.normal; }") && appSource.includes("localStorage.setItem(CREDIT_KEY, creditMode)"));
 // 10-16 «S19 프리미엄 3하트 총 152곡인데 왜 곡수가 안맞지» — 프리미엄은 하트가 줄어도 p_* 조건(프리미엄 전용곡 유지)을 쓴다.

@@ -406,6 +406,17 @@ export default function App() {
     else setZone(null);
   }
 
+  // 10-16 «버튼 눌리는거 불 안 들어오게 · 버튼 누르면 그 레벨대 곡 목록으로 · 시리즈존 누르면 시리즈 존 가고» —
+  // 곡 화면의 위치 단추는 그 존 목록을 연다. 곡 화면은 기록에 남아 뒤로가기로 돌아온다.
+  function openZoneFromSong(next: ZoneSelection) {
+    history.pushState({ zone: next, scroll: 0 }, "", location.pathname);
+    pendingScroll.current = "first";
+    setSelectedTitle(null);
+    setQuery("");
+    setTab("zones");
+    setZone(next);
+  }
+
   function changeTab(next: TabKey) {
     setTab(next);
     setSelectedTitle(null);
@@ -446,7 +457,7 @@ export default function App() {
         </section>
 
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
-          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
+          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onOpenZone={openZoneFromSong} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />}
           {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={openZone} onChoose={chooseTitle} />}
@@ -523,7 +534,7 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
   </>;
 }
 
-function SongDetail({ contract, title, filter, onBack }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void }) {
+function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void }) {
   const locations = locationsFor(contract, title, filter);
   const [activeId, setActiveId] = useState(locations[0]?.id ?? "");
   useEffect(() => setActiveId(locations[0]?.id ?? ""), [title, filter]);
@@ -553,15 +564,14 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
     {locations.length ? <>
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>
-        <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => setActiveId(location.id)} className={active?.id === location.id ? "active" : ""}>
+        <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => onOpenZone({ kind: location.kind, key: location.listKey, label: location.label })}>
           <strong>{location.kind === "level" ? location.label : location.label.replace(" 채널", "")}</strong>
           <span><b>{location.position}</b>/{location.total}</span>
         </button>)}</div>
       </div>)}</div>
       {active && <div className="neighbor-panel">
-        <div className="neighbor-head"><span>기기에서 이렇게 보입니다</span><b>{active.label} · {FILTERS.find((item) => item.key === filter)?.label}</b></div>
+        {/* 10-16 «기기에서 이렇게 보입니다 / S2 · 노말에서 고를 수 있는 곡 · 첫 곡과 마지막 곡은 … 이건 빼» */}
         <div className="neighbor-strip">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><span>{item.position}</span><strong>{item.title}</strong><small>{item.current ? "찾는 곡" : item.side}</small></div>)}</div>
-        <p className="wrap-note">첫 곡과 마지막 곡은 서로 이어집니다. 난이도존 1번은 RANDOM이고, 곡 위치는 기기 화면 번호 그대로 보여 드립니다.</p>
       </div>}
     </> : <EmptyState
       title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
