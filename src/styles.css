@@ -349,3 +349,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .recent-chips button { max-width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: inherit; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .bottom-nav { grid-template-columns: repeat(2, 1fr); }   /* 최근 찾기 버튼을 뺐다(10-16) — 검색 밑으로 옮김 */
+/* 10-16 «노말에서 고를 수 있는 곡 날려 · 피닉스2 아케이드 위에 여백 줄여» */
+main { padding-top: 12px; }
+.hero .eyebrow { margin-top: 0; }
+@media (max-width: 560px) { main { padding-top: 10px; } }

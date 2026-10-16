@@ -378,7 +378,6 @@ const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: 
 
 function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: { mode: CreditMode; hearts: number; filter: FilterKey; onModeChange(value: CreditMode): void; onHeartsChange(value: number): void }) {
   const max = MODE_MAX[mode];
-  const filterLabel = FILTERS.find((item) => item.key === filter)?.label;
   return <div className="credit-control">
     <div className="mode-control" aria-label="크레딧 종류">
       <button className={mode === "normal" ? "active" : ""} onClick={() => onModeChange("normal")}><b>노말</b><small>4♥</small></button>
@@ -390,7 +389,6 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
         {Array.from({ length: max }, (_, index) => index + 1).map((value) => <button key={value} className={value <= hearts ? "filled" : ""} onClick={() => onHeartsChange(value)} aria-label={`하트 ${value}개로 설정`} aria-pressed={value === hearts}>♥</button>)}
       </div>
       <b className="heart-count">{hearts}/{max}</b>
-      <small className="heart-result">{filterLabel}</small>
     </div>
   </div>;
 }
