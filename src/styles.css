@@ -446,3 +446,6 @@ main { padding-top: 12px; }
 .bottom-nav button { flex-direction: row; gap: 6px; }
 .bottom-nav button span { font-size: 12px; }
 .app-shell.zone-open .zone-song-list { padding-bottom: 76px; }
+/* 10-16 «화면 아래로 내려도 곡 위치 검색까지 위쪽은 고정» · «아케이드 오더 위쪽은 그닥 필요없긴하고» —
+   맨 위 로고 줄은 같이 올라가고, ARCADE ORDER 줄부터 검색 칸까지만 화면 위에 붙는다(존 상세는 zone-open 판이 따로 고정). */
+.app-shell:not(.zone-open) .hero { position: sticky; top: 0; z-index: 6; background: var(--bg); padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px; }
