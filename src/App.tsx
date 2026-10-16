@@ -401,7 +401,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
-          <div><strong>ZONE FINDER</strong><small>PUMP IT UP</small></div>
+          <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
         </div>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
@@ -417,7 +417,6 @@ export default function App() {
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
       <main>
-        <p className="eyebrow hero-eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
         <section className="hero">
                     <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
           <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} onFocus={scrollToSearchSoon} />
@@ -628,7 +627,6 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   };
   const shown: ZoneGroupKey[] = ["single", "double", "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
   return <>
-    <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 됩니다.</p></div>
     {shown.map((key) => <ZoneGroup key={key} title={groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount />)}
   </>;
 }
