@@ -432,6 +432,27 @@ export default function App() {
     setZone(next);
   }
 
+  // 안내 예시 곡 — 싱글 난이도존에 여러 번 나오는 곡(노스텔지어: S3·S5·S8 …)
+  const TOUR_SONG = "노스텔지어";
+  function tourSteps(): TourStep[] {
+    const songZone = (): ZoneSelection | null => {
+      const first = locationsFor(contract!, TOUR_SONG, filter).find((item) => item.kind === "level");
+      return first ? { kind: first.kind, key: first.listKey, label: first.label } : null;
+    };
+    return [
+      { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다.", do: () => goHome() },
+      { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
+      { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => goHome() },
+      { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
+      { target: ".route-groups", title: "⑤ 곡이 있는 자리", body: "싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. S4 같은 단추를 누르면 그 존 목록으로 갑니다.", do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
+      { target: () => document.querySelector(".zone-song-list [data-first]"), title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); } } },
+      { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => goHome() },
+      { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
+      { target: ".recent-strip", title: "⑨ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
+      { target: "button.brand", title: "⑩ 처음으로", body: "어디서든 왼쪽 위 로고를 누르면 이 첫 화면으로 돌아옵니다." },
+    ];
+  }
+
   function goHome() {
     history.pushState(null, "", location.pathname);
     setQuery("");
@@ -461,7 +482,7 @@ export default function App() {
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
         </button>
         {/* 10-16 «존 파인더 우측에 ? 누르면 가이드 · 버튼 어떤 순서대로 누르면 어떻게 동작하는지 하이라이트 느낌으로 순차적으로» */}
-        <button className="help-button" onClick={() => { goHome(); setTourOpen(true); }} aria-label="사용 안내">?</button>
+        <button className="help-button" onClick={() => setTourOpen(true)} aria-label="사용 안내">?</button>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
@@ -474,7 +495,7 @@ export default function App() {
         </div>
       </header>
 
-      {tourOpen && <Tour onClose={() => setTourOpen(false)} />}
+      {tourOpen && <Tour steps={tourSteps()} onClose={() => { setTourOpen(false); goHome(); }} />}
       {updateReady && <div className="update-banner"><span>새 버전이 있습니다</span><button onClick={() => location.reload()}>새로고침</button></div>}
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
@@ -718,35 +739,33 @@ function FatalState({ message }: { message: string }) {
   return <div className="state-screen error"><div className="brand-mark"><span>↖</span><b>!</b><span>↗</span></div><h1>데이터를 열지 못했습니다</h1><p>{message}</p><button onClick={() => location.reload()}>다시 불러오기</button></div>;
 }
 
-// 사용 안내 — 첫 화면의 단추를 쓰는 순서대로 하나씩 밝혀 보여 준다(목표 단추가 없으면 그 단계는 건너뛴다).
-const TOUR_STEPS: Array<{ target: string; title: string; body: string }> = [
-  { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다." },
-  { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
-  { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 치면 결과가 나오고, 곡을 누르면 그 곡이 있는 모든 존과 기기 번호가 나옵니다." },
-  { target: ".side-toggle", title: "④ 싱글 / 더블", body: "난이도존 목록을 싱글과 더블 사이에서 바꿉니다." },
-  { target: ".zone-grid", title: "⑤ 존 고르기", body: "존을 누르면 기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 곡을 누르면 그 곡의 다른 위치도 볼 수 있습니다." },
-  { target: ".recent-strip", title: "⑥ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
-  { target: "button.brand", title: "⑦ 처음으로", body: "어디서든 왼쪽 위 로고를 누르면 이 첫 화면으로 돌아옵니다." },
-];
+// 사용 안내 — 실제로 누르는 순서대로 화면을 움직이며 하나씩 밝혀 보여 준다.
+//   10-16 «검색 후에 곡 누르는 거랑 곡 눌러서 S4 누르면 이동되는 거까지도» — 단계마다 할 일(do)을 먼저 하고, 그린 뒤 목표를 찾는다.
+//   목표가 없으면(예: 최근 찾기가 빈 사람) 그 단계는 건너뛴다.
+type TourStep = { target: string | (() => Element | null); title: string; body: string; do?: () => void };
 
-function Tour({ onClose }: { onClose(): void }) {
-  // 그린 뒤에 고른다 — 다른 화면에서 «?» 를 누르면 첫 화면이 같은 순간에 그려지므로 그리기 전 DOM 으로는 못 찾는다.
-  const [steps, setSteps] = useState<typeof TOUR_STEPS>([]);
-  useLayoutEffect(() => { setSteps(TOUR_STEPS.filter((item) => document.querySelector(item.target))); }, []);
+function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [dir, setDir] = useState(1);
   const step = steps[index];
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!step) return;
-    const el = document.querySelector<HTMLElement>(step.target);
-    if (!el) return;
-    el.scrollIntoView({ block: "center", behavior: "instant" });
-    const measure = () => setRect(el.getBoundingClientRect());
-    measure();
+    step.do?.();
+    setRect(null);
+    let el: Element | null = null;
+    const measure = () => { if (el) setRect(el.getBoundingClientRect()); };
+    // 할 일이 화면을 다시 그린 뒤에 목표를 찾는다
+    const timer = window.setTimeout(() => {
+      el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
+      if (!el) { const next = index + dir; if (next >= 0 && next < steps.length) setIndex(next); else onClose(); return; }
+      el.scrollIntoView({ block: "center", behavior: "instant" });
+      measure();
+    }, 120);
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, { passive: true });
-    return () => { window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure); };
-  }, [step]);
+    return () => { window.clearTimeout(timer); window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure); };
+  }, [index]);
   if (!step) return null;
   const last = index === steps.length - 1;
   const pad = 6;
@@ -759,8 +778,8 @@ function Tour({ onClose }: { onClose(): void }) {
       <p>{step.body}</p>
       <div className="tour-actions">
         <button onClick={onClose}>닫기</button>
-        {index > 0 && <button onClick={() => setIndex(index - 1)}>이전</button>}
-        <button className="primary" onClick={() => (last ? onClose() : setIndex(index + 1))}>{last ? "끝" : "다음"}</button>
+        {index > 0 && <button onClick={() => { setDir(-1); setIndex(index - 1); }}>이전</button>}
+        <button className="primary" onClick={() => { if (last) onClose(); else { setDir(1); setIndex(index + 1); } }}>{last ? "끝" : "다음"}</button>
       </div>
     </div>
   </div>;
