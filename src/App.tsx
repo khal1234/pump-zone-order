@@ -749,6 +749,14 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [dir, setDir] = useState(1);
   const step = steps[index];
+  // 10-16 «설명이 스크롤이 위로 끌올됐다 내려갔다 올라갔다 하냐» — 스크롤마다 다시 재서 카드가 위·아래로 뒤집히던 것.
+  //   안내 중엔 화면 스크롤을 잠그고, 단계마다 한 번만(필요할 때만) 옮긴 뒤 한 번 잰다.
+  useEffect(() => {
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => { root.style.overflow = before; };
+  }, []);
   useEffect(() => {
     if (!step) return;
     step.do?.();
@@ -759,12 +767,15 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
     const timer = window.setTimeout(() => {
       el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
       if (!el) { const next = index + dir; if (next >= 0 && next < steps.length) setIndex(next); else onClose(); return; }
-      el.scrollIntoView({ block: "center", behavior: "instant" });
+      const r = el.getBoundingClientRect();
+      const heroBottom = document.querySelector(".hero")?.getBoundingClientRect().bottom ?? 0;
+      if (r.top < heroBottom || r.bottom > window.innerHeight - 200) {
+        window.scrollTo({ top: Math.max(0, window.scrollY + r.top - heroBottom - 12), behavior: "instant" });
+      }
       measure();
     }, 120);
     window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, { passive: true });
-    return () => { window.clearTimeout(timer); window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure); };
+    return () => { window.clearTimeout(timer); window.removeEventListener("resize", measure); };
   }, [index]);
   if (!step) return null;
   const last = index === steps.length - 1;
