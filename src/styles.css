@@ -605,7 +605,7 @@ button.brand > div { min-width: max-content; }
 .help-button { flex: none; width: 30px; height: 30px; margin-left: 8px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--mint); font: 800 15px "DM Sans", sans-serif; cursor: pointer; }
 .topbar .brand + .help-button { margin-right: auto; }
 .tour { position: fixed; inset: 0; z-index: 100; }
-.tour-spot { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .68); outline: 2px solid var(--mint); transition: all .25s ease; pointer-events: none; }
+.tour-spot { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .68); outline: 2px solid var(--mint); pointer-events: none; }
 .tour-card { position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; padding: 14px 16px; border: 1px solid var(--mint); border-radius: 16px; background: var(--surface-2); color: var(--text); box-shadow: 0 18px 50px rgba(0,0,0,.5); }
 .tour-card small { color: var(--muted); font-size: 11px; }
 .tour-card b { display: block; margin: 4px 0 6px; font-size: 16px; }

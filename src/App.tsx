@@ -751,18 +751,23 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
   const step = steps[index];
   // 10-16 «설명이 스크롤이 위로 끌올됐다 내려갔다 올라갔다 하냐» — 스크롤마다 다시 재서 카드가 위·아래로 뒤집히던 것.
   //   안내 중엔 화면 스크롤을 잠그고, 단계마다 한 번만(필요할 때만) 옮긴 뒤 한 번 잰다.
+  // 10-16 재발 «계속 왔다갔다 · 설명할 위치에 딱 위치시키면 안 되나» — 단계 사이에 카드가 맨 위(80px)로 갔다 오던 것(setRect(null)),
+  //   밝힘 칸이 0.25초 미끄러지던 것, 폰에서 주소창이 들락날락하며 생긴 resize 로 카드가 위·아래로 뒤집히던 것을 다 뺀다.
+  //   새 위치를 잰 뒤에 한 번에 바꾸고, 폭이 바뀔 때만 다시 잰다.
+  //   안내 중 손가락·휠 스크롤은 막는다(overflow 잠금은 폰 주소창을 흔들어 쓰지 않는다).
   useEffect(() => {
-    const root = document.documentElement;
-    const before = root.style.overflow;
-    root.style.overflow = "hidden";
-    return () => { root.style.overflow = before; };
+    const block = (event: Event) => { if (!(event.target as Element)?.closest?.(".tour-card")) event.preventDefault(); };
+    window.addEventListener("touchmove", block, { passive: false });
+    window.addEventListener("wheel", block, { passive: false });
+    return () => { window.removeEventListener("touchmove", block); window.removeEventListener("wheel", block); };
   }, []);
   useEffect(() => {
     if (!step) return;
     step.do?.();
-    setRect(null);
     let el: Element | null = null;
+    let width = window.innerWidth;
     const measure = () => { if (el) setRect(el.getBoundingClientRect()); };
+    const onResize = () => { if (window.innerWidth !== width) { width = window.innerWidth; measure(); } };
     // 할 일이 화면을 다시 그린 뒤에 목표를 찾는다
     const timer = window.setTimeout(() => {
       el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
@@ -774,8 +779,8 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
       }
       measure();
     }, 120);
-    window.addEventListener("resize", measure);
-    return () => { window.clearTimeout(timer); window.removeEventListener("resize", measure); };
+    window.addEventListener("resize", onResize);
+    return () => { window.clearTimeout(timer); window.removeEventListener("resize", onResize); };
   }, [index]);
   if (!step) return null;
   const last = index === steps.length - 1;
