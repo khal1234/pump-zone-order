@@ -194,7 +194,6 @@ export default function App() {
   });
   const [light, setLight] = useState(() => localStorage.getItem("pump-zone-theme") === "light");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [updateReady, setUpdateReady] = useState(false);
   // 새 배포·새 위치 자료 알림 — 화면이 열려 있는 동안 1분마다, 그리고 화면으로 돌아올 때 확인한다(10-16 사용자 «내용물 바꼈는데 새로고침 하라 안뜨는거 불편»).
   useEffect(() => {
     if (!contract) return;
@@ -206,7 +205,17 @@ export default function App() {
           fetch("/data/current.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         ]);
         if (stopped) return;
-        if ((v?.build && v.build !== __BUILD_ID__) || (c?.contentHash && c.contentHash !== contract!.contentHash)) setUpdateReady(true);
+        // 10-16 «새로고침 뜨는 게 아니라 강제 새로고침하면 안 돼? 굳이 유저한테 시킬 이유가 있나» — 알림 없이 바로 다시 불러온다.
+        //   보던 곡은 주소(?song=)에, 크레딧·하트·싱글/더블은 기기 저장에 있어 그대로 이어진다(열어 둔 존 목록만 첫 화면으로).
+        //   같은 새 판으로 30초 안에 또 다시 불러오지는 않는다 — 배포 직후 옛 화면이 한 번 더 오는 동안 되풀이 새로고침 방지.
+        if ((v?.build && v.build !== __BUILD_ID__) || (c?.contentHash && c.contentHash !== contract!.contentHash)) {
+          const target = `${v?.build ?? ""}|${c?.contentHash ?? ""}`;
+          let last: { target?: string; at?: number } = {};
+          try { last = JSON.parse(sessionStorage.getItem("pump-zone-reload") ?? "{}"); } catch { /* 없음 */ }
+          if (last.target === target && Date.now() - (last.at ?? 0) < 30_000) return;
+          try { sessionStorage.setItem("pump-zone-reload", JSON.stringify({ target, at: Date.now() })); } catch { /* 저장 못 해도 다시 불러온다 */ }
+          location.reload();
+        }
       } catch { /* 오프라인이면 다음 확인 때 */ }
     }
     const timer = window.setInterval(check, 60_000);
@@ -499,7 +508,6 @@ export default function App() {
       </header>
 
       {tourOpen && <Tour steps={tourSteps()} onClose={() => { setTourOpen(false); goHome(); }} />}
-      {updateReady && <div className="update-banner"><span>새 버전이 있습니다</span><button onClick={() => location.reload()}>새로고침</button></div>}
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
       <main>
