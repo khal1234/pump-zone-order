@@ -339,3 +339,13 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 @media (max-width: 560px) {
   .zone-grid.wide { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* 새 버전 알림(10-16) · 검색 밑 최근 찾기(10-16) */
+.update-banner { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 9px 14px; background: var(--mint); color: #062018; font-size: 13px; font-weight: 700; }
+.update-banner button { padding: 5px 12px; border: 0; border-radius: 8px; background: #062018; color: var(--mint); font: inherit; cursor: pointer; }
+.recent-strip { margin: 0 0 14px; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.recent-head b { font-size: 12px; color: var(--muted); }
+.recent-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.recent-chips button { max-width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: inherit; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.bottom-nav { grid-template-columns: repeat(2, 1fr); }   /* 최근 찾기 버튼을 뺐다(10-16) — 검색 밑으로 옮김 */

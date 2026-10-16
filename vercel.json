@@ -3,12 +3,29 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "crons": [
-    { "path": "/api/suggestion-reminder", "schedule": "0 0 * * *" }
+    {
+      "path": "/api/suggestion-reminder",
+      "schedule": "0 0 * * *"
+    }
   ],
   "headers": [
     {
       "source": "/data/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/version.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ]
 }

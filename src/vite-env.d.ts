@@ -16,3 +16,5 @@ interface NavSearchApi {
 interface Window {
   NAV_SEARCH?: NavSearchApi;
 }
+
+declare const __BUILD_ID__: string;

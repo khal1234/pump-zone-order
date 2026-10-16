@@ -173,6 +173,27 @@ export default function App() {
   });
   const [light, setLight] = useState(() => localStorage.getItem("pump-zone-theme") === "light");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  // 새 배포·새 위치 자료 알림 — 화면이 열려 있는 동안 1분마다, 그리고 화면으로 돌아올 때 확인한다(10-16 사용자 «내용물 바꼈는데 새로고침 하라 안뜨는거 불편»).
+  useEffect(() => {
+    if (!contract) return;
+    let stopped = false;
+    async function check() {
+      try {
+        const [v, c] = await Promise.all([
+          fetch("/version.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
+          fetch("/data/current.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
+        ]);
+        if (stopped) return;
+        if ((v?.build && v.build !== __BUILD_ID__) || (c?.contentHash && c.contentHash !== contract!.contentHash)) setUpdateReady(true);
+      } catch { /* 오프라인이면 다음 확인 때 */ }
+    }
+    const timer = window.setInterval(check, 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    check();
+    return () => { stopped = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+  }, [contract]);
   const [adminOpen, setAdminOpen] = useState(() => new URLSearchParams(location.search).get("admin") === "feedback");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -314,6 +335,7 @@ export default function App() {
         </div>
       </header>
 
+      {updateReady && <div className="update-banner"><span>새 버전이 있습니다</span><button onClick={() => location.reload()}>새로고침</button></div>}
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
       <main>
@@ -326,7 +348,7 @@ export default function App() {
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
           {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
-          {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} />}
+          {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />}
           {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={setZone} onChoose={chooseTitle} />}
           {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
@@ -341,7 +363,6 @@ export default function App() {
       <nav className="bottom-nav" aria-label="주요 메뉴">
         <NavButton active={tab === "search"} icon="search" label="검색" onClick={() => changeTab("search")} />
         <NavButton active={tab === "zones"} icon="zones" label="존 목록" onClick={() => changeTab("zones")} />
-        <NavButton active={tab === "recent"} icon="recent" label="최근 찾기" onClick={() => changeTab("recent")} />
       </nav>
     </div>
   );
@@ -375,11 +396,15 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
   </div>;
 }
 
-function SearchLanding({ onChoose, recent }: { onChoose(title: string): void; recent: string[] }) {
+const RECENT_SHOWN = 5;   // 검색 밑에 바로 보이는 최근 기록 수 — 폰 한 화면에 두 줄 안쪽
+
+function SearchLanding({ onChoose, recent, onMore }: { onChoose(title: string): void; recent: string[]; onMore(): void }) {
+  // 최근 찾기는 검색 바로 밑에 RECENT_SHOWN 개 — 더 있으면 «더보기» 로 전체 목록(10-16 사용자 «최근 찾기 날리고 검색 바로 밑에 … 더보기 같이 버튼 눌러서 이동»)
   return <>
+    {recent.length > 0 && <div className="recent-strip"><div className="recent-head"><b>최근 찾기</b>{recent.length > RECENT_SHOWN && <button className="text-button" onClick={onMore}>더보기</button>}</div>
+      <div className="recent-chips">{recent.slice(0, RECENT_SHOWN).map((title) => <button key={title} onClick={() => onChoose(title)}>{title}</button>)}</div></div>}
     <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아보세요</h2></div></div>
     <div className="quick-grid">{QUICK_TITLES.map((title, index) => <button key={title} onClick={() => onChoose(title)}><small>0{index + 1}</small><strong>{title}</strong></button>)}</div>
-    {recent.length > 0 && <div className="inline-recents"><b>최근</b>{recent.slice(0, 5).map((title) => <button key={title} onClick={() => onChoose(title)}>{title}</button>)}</div>}
   </>;
 }
 
@@ -549,7 +574,7 @@ function ZoneGroup({ title, color, items, choose, wide, hideCount }: { title: st
 
 function RecentView({ recent, onChoose, onClear }: { recent: string[]; onChoose(title: string): void; onClear(): void }) {
   return <><div className="section-heading"><div><span>ON THIS DEVICE</span><h2>최근 찾은 곡</h2></div>{recent.length > 0 && <button className="text-button" onClick={onClear}>기록 지우기</button>}</div>
-    {recent.length ? <div className="result-list">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong><small>이 기기에만 저장됨</small></span><span className="arrow">→</span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없습니다" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남습니다." />}
+    {recent.length ? <div className="result-list tight">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong></span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없습니다" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남습니다." />}
   </>;
 }
 
