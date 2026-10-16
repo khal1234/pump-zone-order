@@ -277,6 +277,12 @@ export default function App() {
         pendingScroll.current = back.scroll ?? 0;
         return;
       }
+      if (!title && (history.state as { tab?: string } | null)?.tab === "zones") {
+        setQuery("");
+        setTab("zones");
+        setZone(null);
+        return;
+      }
       if (title) {
         setQuery(title);
         setTab("search");
@@ -360,6 +366,18 @@ export default function App() {
     requestAnimationFrame(() => searchRef.current?.focus());
   }
 
+  // 10-16 «S13 눌렀을 때 뒤로가기 해도 존으로 둘러보기가 안나오네» — 존을 여는 것도 기록 한 칸으로 쌓아 뒤로가기가 존 목록으로 온다.
+  function openZone(next: ZoneSelection | null) {
+    if (next) {
+      history.replaceState({ tab: "zones" }, "", location.href);
+      history.pushState({ zone: next, scroll: 0 }, "", location.href);
+      setZone(next);
+      return;
+    }
+    if ((history.state as { zone?: ZoneSelection } | null)?.zone) history.back();
+    else setZone(null);
+  }
+
   function changeTab(next: TabKey) {
     setTab(next);
     setSelectedTitle(null);
@@ -402,7 +420,7 @@ export default function App() {
           {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />}
-          {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={setZone} onChoose={chooseTitle} />}
+          {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={openZone} onChoose={chooseTitle} />}
           {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
       </main>
