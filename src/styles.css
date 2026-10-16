@@ -449,3 +449,12 @@ main { padding-top: 12px; }
 /* 10-16 «화면 아래로 내려도 곡 위치 검색까지 위쪽은 고정» · «아케이드 오더 위쪽은 그닥 필요없긴하고» —
    맨 위 로고 줄은 같이 올라가고, ARCADE ORDER 줄부터 검색 칸까지만 화면 위에 붙는다(존 상세는 zone-open 판이 따로 고정). */
 .app-shell:not(.zone-open) .hero { position: sticky; top: 0; z-index: 6; background: var(--bg); padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px; }
+/* 10-16 «화면 내리면 노말부터 곡 검색은 고정되어 따라다녀야 · 존목록은 거기에 존목록 돌아가기 버튼이랑 S1 까지» —
+   존 상세도 창 스크롤로 바꾸고(로고 줄은 올라감), 검색 묶음(.hero) 밑에 존 머리(.zone-head)를 붙인다. ARCADE ORDER 줄은 빼고 노말부터. */
+.app-shell.zone-open { height: auto; min-height: 100vh; display: block; overflow: visible; padding-bottom: 100px; }
+.app-shell.zone-open main, .app-shell.zone-open .content, .app-shell.zone-open .zone-detail { display: block; min-height: 0; }
+.app-shell.zone-open .zone-song-list { overflow: visible; padding-bottom: 0; }
+.app-shell.zone-open .data-footer { display: none; }
+.app-shell .hero { position: sticky; top: 0; z-index: 6; background: var(--bg); padding-top: 8px; padding-bottom: 8px; margin-bottom: 8px; }
+.hero-eyebrow { max-width: 780px; margin: 0 auto 4px; }
+.zone-head { position: sticky; top: var(--hero-h, 0px); z-index: 5; background: var(--bg); padding-bottom: 6px; }

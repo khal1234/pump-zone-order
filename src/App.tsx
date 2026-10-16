@@ -228,12 +228,19 @@ export default function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [returnZone, setReturnZone] = useState(false);
   const pendingScroll = useRef<number | null>(null);
+  // 10-16 «노말부터 곡 검색까지 고정 · 존은 돌아가기 버튼이랑 S1 까지» — 존 머리는 고정된 검색 묶음 바로 밑에 붙는다(그 높이를 잰다).
+  useEffect(() => {
+    const hero = document.querySelector(".hero");
+    if (!hero) return;
+    const observer = new ResizeObserver(() => document.documentElement.style.setProperty("--hero-h", `${Math.ceil(hero.getBoundingClientRect().height)}px`));
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, [contract]);
   useEffect(() => {
     if (pendingScroll.current === null || !zone) return;
     const top = pendingScroll.current;
     pendingScroll.current = null;
-    const list = document.querySelector(".zone-song-list");
-    if (list) list.scrollTop = top;
+    requestAnimationFrame(() => window.scrollTo({ top, behavior: "instant" }));
   }, [zone, tab, selectedTitle]);
 
   useEffect(() => {
@@ -346,7 +353,7 @@ export default function App() {
   function chooseTitle(title: string) {
     const fromZone = tab === "zones" && zone !== null;
     // 존에서 연 곡만 돌아갈 존을 기록한다 — 아니면 같은 기록 칸에 남은 옛 존으로 잘못 돌아간다.
-    history.replaceState(fromZone ? { zone, scroll: document.querySelector(".zone-song-list")?.scrollTop ?? 0 } : null, "", location.href);
+    history.replaceState(fromZone ? { zone, scroll: window.scrollY } : null, "", location.href);
     setReturnZone(fromZone);
     setSelectedTitle(title);
     setQuery(title);
@@ -410,8 +417,8 @@ export default function App() {
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
       <main>
+        <p className="eyebrow hero-eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
         <section className="hero">
-          <p className="eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
                     <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
           <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} onFocus={scrollToSearchSoon} />
         </section>
@@ -585,8 +592,8 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
     const categoryTotal = category.reduce((max, row) => Math.max(max, row.total), 0);
     const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : contract.finder.modeRows?.[zone.key] ? `${rows.length}칸` : `${rows.length}곡`;
-    return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
-      <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
+    return <div className="zone-detail"><div className="zone-head"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
+      <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
       <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
     </div>;
