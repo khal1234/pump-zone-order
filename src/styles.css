@@ -600,3 +600,4 @@ button.brand { display: flex; align-items: center; flex: none; white-space: nowr
 button.brand .brand-mark { flex: none; }
 button.brand { width: max-content; min-width: max-content; gap: 8px; }
 button.brand > div { min-width: max-content; }
+.brand { flex: none; white-space: nowrap; }

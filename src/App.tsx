@@ -218,6 +218,8 @@ export default function App() {
   const [adminOpen, setAdminOpen] = useState(() => new URLSearchParams(location.search).get("admin") === "feedback");
   const searchRef = useRef<HTMLInputElement>(null);
   const [returnZone, setReturnZone] = useState(false);
+  // 10-16 «검색으로 들어가면 위치 좌우는 굳이 나올 필요 없어 · 존에서 눌러 들어가면 그 존과 관련시켜 좌우 곡» — 곡을 연 존
+  const [songZone, setSongZone] = useState<ZoneSelection | null>(null);
   const pendingScroll = useRef<number | "first" | null>(null);
   const scrollTopNext = useRef(false);
   const pendingSongScroll = useRef<number | null>(null);
@@ -383,6 +385,7 @@ export default function App() {
     const typed = tab === "search" && !selectedTitle && query.trim() ? query : "";
     history.replaceState(fromZone ? { zone, scroll: window.scrollY } : { origin: typed ? "results" : "lobby", query: typed }, "", location.href);
     setReturnZone(true);
+    setSongZone(fromZone ? zone : null);
     setSelectedTitle(title);
     setQuery(title);
     setTab("search");
@@ -451,7 +454,7 @@ export default function App() {
   return (
     <div className={tab === "zones" && zone ? "app-shell zone-open" : "app-shell"}>
       <header className="topbar">
-        {/* 10-16 «홈화면 가는거 넣었음 하는데 어디가 낫지» — 왼쪽 위 로고를 누르면 첫 화면(자리를 안 먹고, 흔한 자리) */}
+        {/* 10-16 «5key 생각하면 저거(로고) 눌러서 가는게 맞겠다» — 왼쪽 위 로고를 누르면 첫 화면 */}
         <button className="brand" onClick={goHome} aria-label="첫 화면으로">
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
@@ -478,7 +481,7 @@ export default function App() {
         </section>
 
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
-          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onOpenZone={openZoneFromSong} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
+          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onOpenZone={openZoneFromSong} fromZone={songZone} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {/* 10-16 «존목록 검색 둘 말고 하나로 합쳐 · 빠른 시작 다 빼고 · 최근 찾기를 맨 밑에» — 첫 화면 = 검색칸 밑에 존 목록, 맨 밑에 최근 찾기 */}
           {!selectedTitle && !query.trim() && (tab === "search" || (tab === "zones" && !zone)) && <>
@@ -553,9 +556,10 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
   </>;
 }
 
-function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void }) {
+function SongDetail({ contract, title, filter, onBack, onOpenZone, fromZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void; fromZone: ZoneSelection | null }) {
   const locations = locationsFor(contract, title, filter);
-  const neighbors = locations[0] ? neighborTriplet(contract, locations[0], title, filter) : [];
+  const basis = fromZone ? locations.find((item) => item.kind === fromZone.kind && item.listKey === fromZone.key) : undefined;
+  const neighbors = basis ? neighborTriplet(contract, basis, title, filter) : [];
   const routeGroups = [
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
@@ -580,7 +584,7 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract:
     {locations.length ? <>
       {/* 10-16 «14 15 16 을 빼라는거지 · 앞곡 뒷곡 나오는거 목록 빼라는건 아닌데 · 싱글 바로 위에» — 번호·«찾는 곡» 줄 없이 곡 이름만 */}
       {/* 10-16 «어떤거 기준으로 아포칼립스 앞이 추격인진 모르네 · 곡 이름 바로 밑 가운데에» — 앞뒤 곡의 기준 존·번호 */}
-      {neighbors.length > 0 && <p className="neighbor-basis">{locations[0].label} {locations[0].position}번 기준</p>}
+      {basis && neighbors.length > 0 && <p className="neighbor-basis">{basis.label} {basis.position}번 기준</p>}
       {neighbors.length > 0 && <div className="neighbor-strip compact">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><strong>{item.title}</strong></div>)}</div>}
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>
