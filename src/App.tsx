@@ -428,6 +428,15 @@ export default function App() {
     setZone(next);
   }
 
+  function goHome() {
+    history.pushState(null, "", location.pathname);
+    setQuery("");
+    setSelectedTitle(null);
+    setZone(null);
+    setTab("search");
+    scrollTopNext.current = true;
+  }
+
   function changeTab(next: TabKey) {
     setTab(next);
     setSelectedTitle(null);
@@ -442,10 +451,11 @@ export default function App() {
   return (
     <div className={tab === "zones" && zone ? "app-shell zone-open" : "app-shell"}>
       <header className="topbar">
-        <div className="brand">
+        {/* 10-16 «홈화면 가는거 넣었음 하는데 어디가 낫지» — 왼쪽 위 로고를 누르면 첫 화면(자리를 안 먹고, 흔한 자리) */}
+        <button className="brand" onClick={goHome} aria-label="첫 화면으로">
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
-        </div>
+        </button>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
