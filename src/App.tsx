@@ -227,24 +227,6 @@ export default function App() {
     const hero = document.querySelector<HTMLElement>(".hero");
     if (hero) document.documentElement.style.setProperty("--hero-h", `${hero.offsetHeight}px`);
   });
-  // 무한 목록: 위 벌로 올라가거나 아래 벌로 내려가면 한 벌 높이만큼 옮긴다(보이는 곡은 그대로).
-  useEffect(() => {
-    if (tab !== "zones" || !zone) return;
-    function wrap() {
-      // 가운데 벌 = 0, 그 위 = -1, 아래 = 1
-      const starts = [-1, 0, 1].map((k) => document.querySelector<HTMLElement>(`.zone-song-list [data-copystart="${k}"]`));
-      if (starts.some((e) => !e)) return;
-      const top = (e: HTMLElement) => e.getBoundingClientRect().top + window.scrollY;
-      const copyH = top(starts[1]!) - top(starts[0]!);
-      if (copyH <= 0) return;
-      const headBottom = (document.querySelector<HTMLElement>(".zone-head")?.getBoundingClientRect().bottom ?? 0);
-      const viewTop = window.scrollY + headBottom;
-      if (viewTop < top(starts[1]!) - copyH * 0.5) window.scrollTo({ top: window.scrollY + copyH, behavior: "instant" });
-      else if (viewTop > top(starts[2]!) - copyH * 0.5 + copyH) window.scrollTo({ top: window.scrollY - copyH, behavior: "instant" });
-    }
-    window.addEventListener("scroll", wrap, { passive: true });
-    return () => window.removeEventListener("scroll", wrap);
-  }, [tab, zone]);
   // 10-16 «노말부터 곡 검색까지 고정 · 존은 돌아가기 버튼이랑 S1 까지» — 존 머리는 고정된 검색 묶음 바로 밑에 붙는다(그 높이를 잰다).
   useEffect(() => {
     const hero = document.querySelector(".hero");
@@ -626,10 +608,9 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
       {/* 10-16 «124곡 · 프리미엄 전체 곡 이거 빼고 S20을 level 옆에 붙이고 level 을 존 목록 버튼 약간 옆으로» — 한 줄 머리 */}
       <div className="zone-title" title={`${countLabel} · ${FILTERS.find((item) => item.key === filter)?.label}`}><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
-      // 10-16 «무한스크롤이길 바라는거야 계속 내려도 내려도 나오게 위로도 마찬가지고» — 목록을 세 벌 깔고(위·가운데·아래),
-      // 가운데 벌에서 시작해 위·아래 벌로 넘어가면 한 벌 높이만큼 되돌려 끝없이 이어 보이게 한다(App 의 스크롤 감시).
-      // 곡이 적은 존은 한 벌이 화면보다 짧아 세 벌로는 모자라 일곱 벌 — 25곡 ≈ 1170px(곡 한 줄 47px)로 폰 화면 높이를 넘는 선.
-      <div className="zone-song-list">{Array.from({ length: rows.length < 25 ? 7 : 3 }, (_, k) => k).flatMap((copy, _i, all) => rows.map((row, i) => <button key={`${copy}:${row.position}:${row.title}`} data-first={copy === (all.length - 1) / 2 && i === 0 ? "" : undefined} data-copystart={i === 0 ? copy - (all.length - 1) / 2 : undefined} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>))}</div>}
+      // 10-16 «무한 스크롤 하니까 오히려 불편하네 · 위아래로 1세트씩 · 1 바로 위에 xx 후 1까지» — 목록을 위·가운데·아래 세 벌만 깔고
+      // 가운데 벌 첫 곡에서 시작한다. 위로 올리면 마지막 번호부터 거꾸로, 아래로 내리면 한 바퀴 더 나오고 끝난다.
+      <div className="zone-song-list">{[0, 1, 2].flatMap((copy) => rows.map((row, i) => <button key={`${copy}:${row.position}:${row.title}`} data-first={copy === 1 && i === 0 ? "" : undefined} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>))}</div>}
     </div>;
   }
   const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
