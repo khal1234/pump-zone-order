@@ -311,7 +311,7 @@ export default function App() {
     setSelectedTitle(null);
     setZone(null);
     if (next !== "search") clearSongFromUrl();
-    if (next === "search") requestAnimationFrame(() => searchRef.current?.focus());
+    // 10-16 «검색 누르면 키보드 뜨는거 안뜨게» — 탭 전환은 입력칸에 초점을 주지 않는다(입력은 사용자가 칸을 누를 때만).
   }
 
   if (error) return <FatalState message={error} />;
