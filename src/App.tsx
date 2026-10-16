@@ -195,6 +195,15 @@ export default function App() {
   }, [contract]);
   const [adminOpen, setAdminOpen] = useState(() => new URLSearchParams(location.search).get("admin") === "feedback");
   const searchRef = useRef<HTMLInputElement>(null);
+  const [returnZone, setReturnZone] = useState(false);
+  const pendingScroll = useRef<number | null>(null);
+  useEffect(() => {
+    if (pendingScroll.current === null || !zone) return;
+    const top = pendingScroll.current;
+    pendingScroll.current = null;
+    const list = document.querySelector(".zone-song-list");
+    if (list) list.scrollTop = top;
+  }, [zone, tab, selectedTitle]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = light ? "light" : "dark";
@@ -227,6 +236,16 @@ export default function App() {
     function restoreUrlState() {
       const title = new URLSearchParams(location.search).get("song");
       setSelectedTitle(title);
+      // 10-16 «존 목록에서 곡 누르고 뒤로가기 하면 존 목록으로» — 곡을 연 자리가 존이면 그 존과 목록 스크롤로 돌아간다.
+      const back = history.state as { zone?: ZoneSelection; scroll?: number } | null;
+      if (!title && back?.zone) {
+        setQuery("");
+        setTab("zones");
+        setZone(back.zone);
+        setReturnZone(false);
+        pendingScroll.current = back.scroll ?? 0;
+        return;
+      }
       if (title) {
         setQuery(title);
         setTab("search");
@@ -288,6 +307,10 @@ export default function App() {
   }
 
   function chooseTitle(title: string) {
+    const fromZone = tab === "zones" && zone !== null;
+    // 존에서 연 곡만 돌아갈 존을 기록한다 — 아니면 같은 기록 칸에 남은 옛 존으로 잘못 돌아간다.
+    history.replaceState(fromZone ? { zone, scroll: document.querySelector(".zone-song-list")?.scrollTop ?? 0 } : null, "", location.href);
+    setReturnZone(fromZone);
     setSelectedTitle(title);
     setQuery(title);
     setTab("search");
@@ -345,7 +368,7 @@ export default function App() {
         </section>
 
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
-          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { setSelectedTitle(null); clearSongFromUrl(); }} />}
+          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
           {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />}
           {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={setZone} onChoose={chooseTitle} />}
