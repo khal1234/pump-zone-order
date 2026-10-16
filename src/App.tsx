@@ -573,6 +573,14 @@ function neighborTriplet(contract: PublicContract, location: LocationItem, title
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
+  // 10-16 «싱글 더블 난이도존은 버튼 눌러서 둘중 어떤거 뜰지로 · S1 이런게 그대로 D1로 바뀌면 되니까» — 이 기기에 기억한다.
+  const [side, setSide] = useState<"single" | "double">(() => {
+    try { return localStorage.getItem("pump-zone-side") === "double" ? "double" : "single"; } catch { return "single"; }
+  });
+  function pickSide(next: "single" | "double") {
+    setSide(next);
+    try { localStorage.setItem("pump-zone-side", next); } catch { /* 저장 못 해도 화면은 바뀐다 */ }
+  }
   // 10-16 «시리즈존 카테고리는 4열로 · 가로 넘치면 글자 가로 폭 맞춤» — 칸보다 긴 이름만 가로로 줄인다(높이는 그대로).
   useLayoutEffect(() => {
     function fit() {
@@ -625,9 +633,10 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     series: { title: "시리즈존", color: "gold", items: contract.finder.seriesOrder.map((key) => ({ key, count: zoneRows(contract, { kind: "series", key, label: key }, filter).length })), choose: (key) => setZone({ kind: "series", key, label: key }) },
     category: { title: "카테고리", color: "blue", items: categoryItems, choose: (key) => setZone((contract.finder.catSongs[key] || contract.finder.categoryMirrors?.[key]) ? { kind: "category", key, label: key } : { kind: "channel", key, label: isMode(key) ? key : `${key} 채널` }) },
   };
-  const shown: ZoneGroupKey[] = ["single", "double", "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
+  const shown: ZoneGroupKey[] = [side, "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
+  const sideToggle = <div className="side-toggle"><button className={side === "single" ? "active" : ""} onClick={() => pickSide("single")}>싱글</button><button className={side === "double" ? "active" : ""} onClick={() => pickSide("double")}>더블</button></div>;
   return <>
-    {shown.map((key) => <ZoneGroup key={key} title={groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount />)}
+    {shown.map((key) => <ZoneGroup key={key} title={key === side ? "난이도존" : groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount extra={key === side ? sideToggle : undefined} />)}
   </>;
 }
 
@@ -636,8 +645,8 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
   return listFor(contract, fake, filter);
 }
 
-function ZoneGroup({ title, color, items, choose, wide, hideCount }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean; hideCount?: boolean }) {
-  return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3>{!hideCount && <small>{items.length}개</small>}</div>
+function ZoneGroup({ title, color, items, choose, wide, hideCount, extra }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean; hideCount?: boolean; extra?: React.ReactNode }) {
+  return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3>{extra}{!hideCount && <small>{items.length}개</small>}</div>
     <div className={wide ? "zone-grid wide" : "zone-grid names"}>{items.map((item) => <button key={item.key} className={!wide && (item.label ?? item.key).length > 4 ? "span2" : undefined} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong>{!hideCount && <span>{item.countLabel ?? `${item.count}곡`}</span>}</button>)}</div>
   </section>;
 }

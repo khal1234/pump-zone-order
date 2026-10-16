@@ -498,3 +498,7 @@ body { min-height: 100svh; }
 .app-shell, .app-shell.zone-open { display: flex; flex-direction: column; }
 .app-shell > main, .app-shell > .topbar, .app-shell > .admin-foot { width: 100%; box-sizing: border-box; }
 .admin-foot { margin-top: auto; }
+/* 난이도존 싱글/더블 전환 */
+.side-toggle { display: inline-flex; gap: 4px; margin-left: 10px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; }
+.side-toggle button { min-width: 56px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; cursor: pointer; }
+.side-toggle button.active { background: var(--mint); color: #082019; }
