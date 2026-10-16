@@ -31,7 +31,8 @@ check("offline cache is explicit", dataSource.includes('state: "cached"') && app
 check("no personal/local markers", !/c:\\users|d:\\xsanity|play_history|my_records|credential/i.test(JSON.stringify(contract)));
 const originalAnchorShift = contract.navIndex.cats["러브 이즈 어 데인저 존 2 (Try To B.P.M)"]?.find((row) => row.tile === "ORIGINAL");
 check("ORIGINAL inferred positions retain their evidence grade", (originalAnchorShift?.pos ?? 0) > 0 && originalAnchorShift.src === "구간확정" && originalAnchorShift.seen === "닻 밀림");
-check("ORIGINAL evidence is visible in song details", appSource.includes('row.tile === "ORIGINAL" && row.src') && appSource.includes("인접 확인 지점에서 계산한 위치"));
+// 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» — 근거는 자료에만 남고 곡 화면에는 안 나온다.
+check("song details hide the evidence panel", !appSource.includes("<EvidencePanel") && !appSource.includes("확인 정도"));
 const s17 = contract.finder.levelSongs.S17;
 check("level positions preserve RANDOM slot", s17[0].f.all === 2 && contract.navIndex.levelTotals.S17.all === Math.max(...s17.map((row) => row.f.all)));
 check("UI explains screen number convention", appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("기기 화면 번호 그대로"));
@@ -61,7 +62,8 @@ const exposedLevels = Object.keys(contract.finder.levelSongs);
 check("finder exposes only physical difficulty channels", exposedLevels.length === physicalLevels.size && exposedLevels.every((level) => physicalLevels.has(level)) && !contract.finder.levelSongs.S26 && !contract.finder.levelSongs.D28);
 check("search results fold chart aliases into OVER labels", appSource.includes("function chartLabels") && appSource.includes("levelLabel(folds[chart] ?? chart, folds)"));
 check("typing from any tab opens search results", appSource.includes('if (value.trim()) setTab("search")'));
-check("song selection aligns viewport to search", appSource.includes('closest(".search-box") ?? searchRef.current)?.scrollIntoView({ block: "start"'));
+// 10-16 «화면이 아래로 스크롤되네 … 맨 위로 스크롤 땡기는게 더 나아보이고» — 곡을 열면 맨 위로.
+check("song selection scrolls to top", appSource.includes('window.scrollTo({ top: 0, behavior: "instant" })'));
 check("search box sits under hearts and is a search field", appSource.indexOf("<CreditControl") < appSource.indexOf("<SearchBox ref") && appSource.includes('type="search"') && !appSource.includes("scrollToSearchSoon"));  // 10-16 «검색은 스크롤 안나오게» — 검색 묶음이 고정이라 입력 때 화면을 굴리지 않는다
 check("search results start without a count header", !appSource.includes("곡을 가까운 순서로 찾았어"));
 check("basic mode lists 33 official songs", contract.finder.modeSongs?.["베이직 모드"]?.length === 33 && contract.finder.modeSongs["베이직 모드"][0] === "고민중독" && contract.finder.modeSongs["베이직 모드"].every((title) => titles0.has(title)));

@@ -491,3 +491,10 @@ body { min-height: 100svh; }
 .content.searching { min-height: 0; }
 /* 10-16 «Level s2 아까 초록색 작은 글씨로 · 크니까 안예뻐» — 둘 다 옛 LEVEL 글씨(초록 작은 글씨)로 */
 .zone-title span, .zone-title h2 { color: var(--mint); font: 700 13px/1 "DM Sans", sans-serif; letter-spacing: .16em; }
+.admin-foot { max-width: 1100px; margin: 0 auto; padding: 4px 28px 0; text-align: right; }
+.admin-foot button { padding: 4px; border: 0; background: transparent; color: var(--muted); opacity: .45; font: 600 9px "DM Sans", sans-serif; cursor: pointer; }
+@media (max-width: 560px) { .admin-foot { padding: 2px 16px 0; } }
+/* 관리는 화면(또는 긴 목록)의 맨 끝 — 하단 메뉴 바로 위 */
+.app-shell, .app-shell.zone-open { display: flex; flex-direction: column; }
+.app-shell > main, .app-shell > .topbar, .app-shell > .admin-foot { width: 100%; box-sizing: border-box; }
+.admin-foot { margin-top: auto; }

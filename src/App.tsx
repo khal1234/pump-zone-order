@@ -2,7 +2,6 @@ import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } fro
 import { loadContract, type LoadState } from "./data";
 import { FeedbackAdmin, FeedbackDialog } from "./Feedback";
 import type {
-  EvidenceRow,
   FilterKey,
   LocationItem,
   PositionSet,
@@ -154,13 +153,6 @@ function listFor(contract: PublicContract, location: LocationItem, filter: Filte
   return categoryEntries(contract, location.listKey, filter).map(({ title, position }) => ({ title, position }));
 }
 
-function confidenceClass(grade: string): "solid" | "estimated" | "unknown" {
-  if (!grade) return "unknown";
-  if (/미검증|추정|추측|구간/.test(grade)) return "estimated";
-  if (/직독|눈판독|곁칸|확정|실측/.test(grade)) return "solid";
-  return "unknown";
-}
-
 function Icon({ name }: { name: "search" | "zones" | "recent" | "sun" | "moon" | "back" | "share" | "close" }) {
   const paths = {
     search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
@@ -227,7 +219,9 @@ export default function App() {
   const [adminOpen, setAdminOpen] = useState(() => new URLSearchParams(location.search).get("admin") === "feedback");
   const searchRef = useRef<HTMLInputElement>(null);
   const [returnZone, setReturnZone] = useState(false);
-  const pendingScroll = useRef<number | null>(null);
+  const pendingScroll = useRef<number | "first" | null>(null);
+  const scrollTopNext = useRef(false);
+  useEffect(() => { history.scrollRestoration = "manual"; }, []);
   // 10-16 «노말부터 곡 검색까지 고정 · 존은 돌아가기 버튼이랑 S1 까지» — 존 머리는 고정된 검색 묶음 바로 밑에 붙는다(그 높이를 잰다).
   useEffect(() => {
     const hero = document.querySelector(".hero");
@@ -237,10 +231,26 @@ export default function App() {
     return () => observer.disconnect();
   }, [contract]);
   useEffect(() => {
+    if (scrollTopNext.current) {
+      scrollTopNext.current = false;
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
     if (pendingScroll.current === null || !zone) return;
-    const top = pendingScroll.current;
+    const target = pendingScroll.current;
     pendingScroll.current = null;
-    requestAnimationFrame(() => window.scrollTo({ top, behavior: "instant" }));
+    {
+      let top = typeof target === "number" ? target : 0;
+      // 10-16 «위에 번호로도 이동할 경우가 있어 … 스크롤을 위로 올려서 마지막 번호가 위에서도 보일 수 있게» —
+      // 목록 뒤 절반을 위에 깔았으니, 처음 열 때는 첫 곡이 고정 머리 바로 밑에 오게 내려 둔다.
+      if (target === "first") {
+        const first = document.querySelector<HTMLElement>(".zone-song-list [data-first]");
+        const head = document.querySelector<HTMLElement>(".zone-head");
+        const hero = document.querySelector<HTMLElement>(".hero");
+        if (first) top = first.getBoundingClientRect().top + window.scrollY - (hero?.offsetHeight ?? 0) - (head?.offsetHeight ?? 0) - 6;
+      }
+      window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
+    }
   }, [zone, tab, selectedTitle]);
 
   useEffect(() => {
@@ -284,6 +294,15 @@ export default function App() {
         pendingScroll.current = back.scroll ?? 0;
         return;
       }
+      const searchBack = history.state as { origin?: string; query?: string } | null;
+      if (!title && searchBack?.origin) {
+        setQuery(searchBack.query ?? "");
+        setTab("search");
+        setZone(null);
+        setReturnZone(false);
+        scrollTopNext.current = true;
+        return;
+      }
       if (!title && (history.state as { tab?: string } | null)?.tab === "zones") {
         setQuery("");
         setTab("zones");
@@ -311,12 +330,6 @@ export default function App() {
     if (!query.trim() || !window.NAV_SEARCH) return [];
     return window.NAV_SEARCH.rankTitles(query, titles, (title) => inverseAliases[title] ?? []).slice(0, 24);
   }, [query, titles, inverseAliases]);
-
-  function scrollToSearch() {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      (searchRef.current?.closest(".search-box") ?? searchRef.current)?.scrollIntoView({ block: "start", behavior: "smooth" });
-    }));
-  }
 
   function clearSongFromUrl() {
     const url = new URL(location.href);
@@ -348,8 +361,10 @@ export default function App() {
   function chooseTitle(title: string) {
     const fromZone = tab === "zones" && zone !== null;
     // 존에서 연 곡만 돌아갈 존을 기록한다 — 아니면 같은 기록 칸에 남은 옛 존으로 잘못 돌아간다.
-    history.replaceState(fromZone ? { zone, scroll: window.scrollY } : null, "", location.href);
-    setReturnZone(fromZone);
+    // 10-16 «최근 찾기 버튼 눌러 이동했으면 뒤로 가기 눌렀음 로비로 · 존 목록이랑 동일하게» — 검색 쪽도 연 자리(로비 / 입력한 결과)를 기록한다.
+    const typed = tab === "search" && !selectedTitle && query.trim() ? query : "";
+    history.replaceState(fromZone ? { zone, scroll: window.scrollY } : { origin: typed ? "results" : "lobby", query: typed }, "", location.href);
+    setReturnZone(true);
     setSelectedTitle(title);
     setQuery(title);
     setTab("search");
@@ -358,7 +373,8 @@ export default function App() {
     setRecent(next);
     localStorage.setItem(RECENT_KEY, JSON.stringify(next));
     history.pushState(null, "", `?song=${encodeURIComponent(title)}`);
-    scrollToSearch();
+    // 10-16 «화면이 아래로 스크롤되네 … 맨 위로 스크롤 땡기는게 더 나아보이고» — 그린 뒤 맨 위로(아래 효과).
+    scrollTopNext.current = true;
   }
 
   function clearSearch() {
@@ -373,6 +389,7 @@ export default function App() {
     if (next) {
       history.replaceState({ tab: "zones" }, "", location.href);
       history.pushState({ zone: next, scroll: 0 }, "", location.href);
+      pendingScroll.current = "first";
       setZone(next);
       return;
     }
@@ -403,7 +420,7 @@ export default function App() {
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
           </div>
           {/* 10-16 «맨 아래 PHOENIX 2·계약·총 곡수 필요없잖아 / 익명 건의 관리는 맨 우측 상단 다크 모드 왼쪽에 약간 띄워서» */}
-          <div className="top-links"><button onClick={() => setFeedbackOpen(true)}>익명 건의</button><button onClick={openAdmin}>관리</button></div>
+          <div className="top-links"><button onClick={() => setFeedbackOpen(true)}>익명 건의</button></div>
           <button className="icon-button" onClick={() => setLight((value) => !value)} aria-label={light ? "어두운 테마" : "밝은 테마"}>
             <Icon name={light ? "moon" : "sun"} />
           </button>
@@ -427,6 +444,8 @@ export default function App() {
           {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
       </main>
+      {/* 10-16 «관리는 내가 필요한거니 유저가 잘 안보일 수 있게 맨 아래 하단으로» */}
+      <footer className="admin-foot"><button onClick={openAdmin}>관리</button></footer>
 
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {adminOpen && <FeedbackAdmin onClose={closeAdmin} />}
@@ -498,7 +517,6 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
   useEffect(() => setActiveId(locations[0]?.id ?? ""), [title, filter]);
   const active = locations.find((item) => item.id === activeId) ?? locations[0];
   const neighbors = active ? neighborTriplet(contract, active, title, filter) : [];
-  const evidence = evidenceFor(contract, title);
   const routeGroups = [
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
@@ -537,7 +555,7 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
       title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
       copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있습니다." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다."}
     />}
-    <EvidencePanel rows={evidence} />
+    {/* 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» */}
   </article>;
 }
 
@@ -552,30 +570,6 @@ function neighborTriplet(contract: PublicContract, location: LocationItem, title
   const current = rows[index];
   const next = rows[(index + 1) % rows.length];
   return [{ ...previous, current: false, side: "앞 곡" }, { ...current, current: true, side: "찾는 곡" }, { ...next, current: false, side: "뒤 곡" }];
-}
-
-function evidenceFor(contract: PublicContract, title: string): EvidenceRow[] {
-  const seen = new Set<string>();
-  const original = (contract.navIndex.cats[title] ?? [])
-    .filter((row) => row.tile === "ORIGINAL" && row.src)
-    .map((row) => ({
-      title, zone: "ORIGINAL", position: String(row.pos), grade: row.src ?? "",
-      source: row.seen === "닻 밀림" ? "인접 확인 지점에서 계산한 위치" : "",
-    }));
-  return [...original, ...Object.values(contract.evidence).flat().filter((row) => row.title === title)].filter((row) => {
-    const key = `${row.zone}|${row.position}|${row.grade}|${row.source ?? ""}`;
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  }).slice(0, 8);
-}
-
-function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
-  return <section className="evidence-panel"><div className="section-heading compact"><div><span>위치 근거</span><h3>확인 정도</h3></div></div>
-    {rows.length ? <div className="evidence-list">{rows.map((row, index) => <div key={`${row.zone}:${row.position}:${index}`}>
-      <span className={`confidence-dot ${confidenceClass(row.grade)}`}></span>
-      <p><strong>{row.zone || "위치 자료"} {row.position && `#${row.position}`}</strong><small>{row.grade || "등급 미기록"}{row.source && row.source !== row.grade ? ` · ${row.source}` : ""}</small></p>
-    </div>)}</div> : <p className="muted-box">이 곡의 공개 근거 설명은 아직 연결되지 않았습니다. 위치 번호와 근거 완성도는 별도로 관리됩니다.</p>}
-  </section>;
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
@@ -601,7 +595,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
       {/* 10-16 «124곡 · 프리미엄 전체 곡 이거 빼고 S20을 level 옆에 붙이고 level 을 존 목록 버튼 약간 옆으로» — 한 줄 머리 */}
       <div className="zone-title" title={`${countLabel} · ${FILTERS.find((item) => item.key === filter)?.label}`}><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div></div>
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
-      <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
+      <div className="zone-song-list">{[...rows.slice(Math.ceil(rows.length / 2)), ...rows.slice(0, Math.ceil(rows.length / 2))].map((row) => <button key={`${row.position}:${row.title}`} data-first={row === rows[0] ? "" : undefined} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
     </div>;
   }
   const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
