@@ -17,6 +17,9 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
   { key: "nofull", label: "풀송 제외", short: "풀송 제외" },
   { key: "nofullremix", label: "풀송·리믹스 제외", short: "둘 다 제외" },
   { key: "onlyshort", label: "숏컷만", short: "숏컷만" },
+  { key: "p_nofull", label: "프리미엄 · 풀송 제외", short: "풀송 제외" },
+  { key: "p_nofullremix", label: "프리미엄 · 풀송·리믹스 제외", short: "둘 다 제외" },
+  { key: "p_onlyshort", label: "프리미엄 · 숏컷만", short: "숏컷만" },
 ];
 type CreditMode = "normal" | "premium";
 type ZoneGroupKey = "single" | "double" | "series" | "category";
@@ -31,18 +34,25 @@ function pos(set: PositionSet | undefined, filter: FilterKey): number | undefine
   return set[filter];
 }
 
+// 프리미엄 하트 조건(p_*)도 채널 이용 가능 여부는 같은 하트의 노말 조건과 같다.
+function baseFilter(filter: FilterKey): string {
+  return filter.startsWith("p_") ? filter.slice(2) : filter;
+}
+
 function channelAvailable(kind: string, filter: FilterKey): boolean {
   if (kind === "숏컷") return true;
-  if (kind === "리믹스") return filter !== "nofullremix" && filter !== "onlyshort";
+  if (kind === "리믹스") return baseFilter(filter) !== "nofullremix" && baseFilter(filter) !== "onlyshort";
   if (kind === "풀송") return filter === "all" || filter === "normal";
-  return filter !== "onlyshort";
+  return baseFilter(filter) !== "onlyshort";
 }
 
 function heartsToFilter(mode: CreditMode, hearts: number): FilterKey {
   if (hearts >= 4) return mode === "premium" ? "all" : "normal";
-  if (hearts === 3) return "nofull";
-  if (hearts === 2) return "nofullremix";
-  return "onlyshort";
+  // 10-16 사용자 «S19 프리미엄 3하트 총 152곡인데 왜 곡수가 안맞지» — 프리미엄은 하트가 줄어도 프리미엄 전용곡이 남는다.
+  const premium = mode === "premium" ? "p_" : "";
+  if (hearts === 3) return `${premium}nofull` as FilterKey;
+  if (hearts === 2) return `${premium}nofullremix` as FilterKey;
+  return `${premium}onlyshort` as FilterKey;
 }
 
 function levelLabel(channel: string, folds: Record<string, string>): string {
@@ -78,7 +88,7 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
   if (series && seriesPosition && seriesTotal) {
     items.push({ id: `series:${series.zone}`, kind: "series", label: series.zone, sublabel: "시리즈존", position: seriesPosition, total: seriesTotal, listKey: series.zone });
     for (const [category, mirrorZone] of Object.entries(contract.finder.categoryMirrors ?? {})) {
-      if (mirrorZone === series.zone && filter !== "onlyshort") {
+      if (mirrorZone === series.zone && baseFilter(filter) !== "onlyshort") {
         items.push({ id: `category:${category}`, kind: "category", label: category, sublabel: "카테고리", position: seriesPosition, total: seriesTotal, listKey: category });
       }
     }
@@ -91,7 +101,7 @@ function locationsFor(contract: PublicContract, title: string, filter: FilterKey
     const index = list.indexOf(title);
     if (index >= 0) items.push({ id: `mode:${mode}`, kind: "channel", label: mode, sublabel: "게임 모드", position: index + 1, total: list.length, listKey: mode });
   }
-  if (filter !== "onlyshort") {
+  if (baseFilter(filter) !== "onlyshort") {
     for (const category of nav.cats[title] ?? []) {
       items.push({ id: `category:${category.tile}`, kind: "category", label: category.tile, sublabel: "카테고리", position: category.pos, total: category.total, listKey: category.tile });
     }
@@ -569,7 +579,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   const categoryItems = contract.finder.tiles.flatMap((tile) => {
     const categoryRows = contract.finder.catSongs[tile.name];
     const mirroredCategory = contract.finder.categoryMirrors?.[tile.name];
-    if ((categoryRows || mirroredCategory) && filter !== "onlyshort") {
+    if ((categoryRows || mirroredCategory) && baseFilter(filter) !== "onlyshort") {
       const entries = categoryEntries(contract, tile.name, filter);
       const total = entries.reduce((max, row) => Math.max(max, row.total), 0);
       return [{ key: tile.name, count: entries.length, countLabel: total > entries.length ? `${entries.length}/${total} 확인` : `${total}곡` }];

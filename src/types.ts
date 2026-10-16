@@ -1,4 +1,4 @@
-export type FilterKey = "all" | "nofull" | "nofullremix" | "normal" | "onlyshort";
+export type FilterKey = "all" | "nofull" | "nofullremix" | "normal" | "onlyshort" | "p_nofull" | "p_nofullremix" | "p_onlyshort";
 export type TabKey = "search" | "zones" | "recent";
 
 export interface PositionSet {
@@ -7,6 +7,10 @@ export interface PositionSet {
   nofullremix?: number;
   normal?: number;
   onlyshort?: number;
+  // 프리미엄 크레딧 하트 3·2·1 — 불러올 때 data.ts 가 전체 곡 순서에서 계산한다.
+  p_nofull?: number;
+  p_nofullremix?: number;
+  p_onlyshort?: number;
 }
 
 export interface FinderEntry {

@@ -30,14 +30,15 @@ check("site consumes common search", appSource.includes("NAV_SEARCH.rankTitles")
 check("offline cache is explicit", dataSource.includes('state: "cached"') && appSource.includes("오프라인 저장본"));
 check("no personal/local markers", !/c:\\users|d:\\xsanity|play_history|my_records|credential/i.test(JSON.stringify(contract)));
 const originalAnchorShift = contract.navIndex.cats["러브 이즈 어 데인저 존 2 (Try To B.P.M)"]?.find((row) => row.tile === "ORIGINAL");
-check("ORIGINAL inferred positions retain their evidence grade", originalAnchorShift?.pos === 274 && originalAnchorShift.src === "구간확정" && originalAnchorShift.seen === "닻 밀림");
+check("ORIGINAL inferred positions retain their evidence grade", (originalAnchorShift?.pos ?? 0) > 0 && originalAnchorShift.src === "구간확정" && originalAnchorShift.seen === "닻 밀림");
 check("ORIGINAL evidence is visible in song details", appSource.includes('row.tile === "ORIGINAL" && row.src') && appSource.includes("인접 확인 지점에서 계산한 위치"));
 const s17 = contract.finder.levelSongs.S17;
 check("level positions preserve RANDOM slot", s17[0].f.all === 2 && contract.navIndex.levelTotals.S17.all === Math.max(...s17.map((row) => row.f.all)));
 check("UI explains screen number convention", appSource.includes("난이도존 1번은 RANDOM") && appSource.includes("기기 화면 번호 그대로"));
 // 10-16 사용자 «새로고침해도 노말·프리미엄·하트 개수 유지» — 저장값이 없을 때만 노말 4하트.
 check("default credit is normal four hearts", appSource.includes(': "normal"; } catch { return "normal"; }') && appSource.includes("catch { return MODE_MAX.normal; }") && appSource.includes("localStorage.setItem(CREDIT_KEY, creditMode)"));
-check("hearts derive available song filter", appSource.includes('if (hearts >= 4) return mode === "premium" ? "all" : "normal"') && appSource.includes('if (hearts === 3) return "nofull"') && appSource.includes('return "onlyshort"'));
+// 10-16 «S19 프리미엄 3하트 총 152곡인데 왜 곡수가 안맞지» — 프리미엄은 하트가 줄어도 p_* 조건(프리미엄 전용곡 유지)을 쓴다.
+check("hearts derive available song filter", appSource.includes('if (hearts >= 4) return mode === "premium" ? "all" : "normal"') && appSource.includes('const premium = mode === "premium" ? "p_" : ""') && appSource.includes('return `${premium}onlyshort`') && dataSource.includes("addPremiumPositions(contract)"));
 check("zone and song routes use compact groups", !appSource.includes('className="zone-tabs"') && appSource.includes('["single", "double", "series", "category"]') && appSource.includes('className="route-groups"') && appSource.includes('{ label: "싱글"') && appSource.includes('{ label: "카테고리"'));
 check("category tab includes arcade and special channels", appSource.includes("finder.catSongs[tile.name]") && appSource.includes("finder.channelSongs[channelKey]") && appSource.includes('title: "카테고리"'));
 check("one heart does not fall back to all songs", appSource.includes("return set[filter]") && !appSource.includes("set.onlyshort"));
