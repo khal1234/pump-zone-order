@@ -439,12 +439,15 @@ export default function App() {
       const first = locationsFor(contract!, TOUR_SONG, filter).find((item) => item.kind === "level");
       return first ? { kind: first.kind, key: first.listKey, label: first.label } : null;
     };
+    // 10-16 «노스텔지어 예를 들 거면 실제 있는 걸 가지고 하던가 S3을 하지 왜 없는 S4를 하지» — 예시 곡의 실제 첫 존 이름을 쓴다
+    // 같은 사용자 «그리고 S3(S4)만 가리켜» — ⑤ 는 상자 전체가 아니라 그 단추 하나만 밝힌다(첫 단추 = 예시 곡의 첫 싱글 존).
+    const exampleZone = songZone()?.label ?? "S3";
     return [
       { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다.", do: () => goHome() },
       { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
       { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => goHome() },
       { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
-      { target: ".route-groups", title: "⑤ 곡이 있는 자리", body: "싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. S4 같은 단추를 누르면 그 존 목록으로 갑니다.", do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
+      { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
       { target: () => document.querySelector(".zone-song-list [data-first]"), title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); } } },
       { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => goHome() },
       { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
@@ -769,16 +772,22 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
     const measure = () => { if (el) setRect(el.getBoundingClientRect()); };
     const onResize = () => { if (window.innerWidth !== width) { width = window.innerWidth; measure(); } };
     // 할 일이 화면을 다시 그린 뒤에 목표를 찾는다
+    // 10-16 «구분동작으로 딱딱 끊기는 느낌 · 가리키는 애랑 설명이랑 한번에 촥 움직이게» — 화면 스크롤과 밝힘·카드 이동을
+    //   같은 순간에 같은 길이(.35초)로 시작한다. 스크롤 뒤 자리를 미리 계산해 그쪽으로 바로 옮긴다.
     const timer = window.setTimeout(() => {
       el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
       if (!el) { const next = index + dir; if (next >= 0 && next < steps.length) setIndex(next); else onClose(); return; }
       const r = el.getBoundingClientRect();
       const heroBottom = document.querySelector(".hero")?.getBoundingClientRect().bottom ?? 0;
+      let shift = 0;
       if (r.top < heroBottom || r.bottom > window.innerHeight - 200) {
-        window.scrollTo({ top: Math.max(0, window.scrollY + r.top - heroBottom - 12), behavior: "instant" });
+        const maxY = document.documentElement.scrollHeight - window.innerHeight;
+        const goal = Math.min(maxY, Math.max(0, window.scrollY + r.top - heroBottom - 12));
+        shift = goal - window.scrollY;
+        window.scrollTo({ top: goal, behavior: "smooth" });
       }
-      measure();
-    }, 120);
+      setRect(new DOMRect(r.left, r.top - shift, r.width, r.height));
+    }, 30);
     window.addEventListener("resize", onResize);
     return () => { window.clearTimeout(timer); window.removeEventListener("resize", onResize); };
   }, [index]);
