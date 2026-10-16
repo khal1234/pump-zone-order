@@ -481,7 +481,7 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
     {/* 10-16 «노말/프리미엄 하나로 버튼 합치고 토글형으로 한번 누르면 다른 한쪽만 불 들어오게» */}
     <div className="mode-control single" aria-label="크레딧 종류">
       {/* 10-16 «노말/프리미엄 둘 다 하되 누른쪽만 불 들어오게 · 버튼은 1개로만» — 한 버튼 안에 두 칸, 누르면 반대쪽에 불 */}
-      <button className="duo" onClick={() => onModeChange(mode === "normal" ? "premium" : "normal")} aria-label={`지금 ${mode === "normal" ? "노말" : "프리미엄"} — 눌러서 바꾸기`}><span className={mode === "normal" ? "on" : ""}>노말</span><span className={mode === "premium" ? "on" : ""}>프리미엄</span></button>
+      <button className={`duo ${mode === "normal" ? "first" : "second"}`} onClick={() => onModeChange(mode === "normal" ? "premium" : "normal")} aria-label={`지금 ${mode === "normal" ? "노말" : "프리미엄"} — 눌러서 바꾸기`}><span className={mode === "normal" ? "on" : ""}>노말</span><span className={mode === "premium" ? "on" : ""}>프리미엄</span></button>
     </div>
     <div className="heart-control">
       <span className="heart-title">남은 하트</span>
@@ -649,7 +649,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   };
   const shown: ZoneGroupKey[] = [side, "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
   // 10-16 «싱글/더블로 여기도 토글형으로» — 버튼 하나, 누르면 다른 쪽
-  const sideToggle = <div className="side-toggle"><button className="duo" onClick={() => pickSide(side === "single" ? "double" : "single")}><span className={side === "single" ? "on" : ""}>싱글</span><span className={side === "double" ? "on" : ""}>더블</span></button></div>;
+  const sideToggle = <div className="side-toggle"><button className={`duo ${side === "single" ? "first" : "second"}`} onClick={() => pickSide(side === "single" ? "double" : "single")}><span className={side === "single" ? "on" : ""}>싱글</span><span className={side === "double" ? "on" : ""}>더블</span></button></div>;
   return <>
     {shown.map((key) => <ZoneGroup key={key} title={key === side ? "난이도존" : groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount extra={key === side ? sideToggle : undefined} />)}
   </>;

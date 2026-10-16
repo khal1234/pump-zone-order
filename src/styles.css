@@ -536,3 +536,15 @@ button.duo span { min-height: 30px; }
 button.duo span:first-child { transform: translateY(-5px); }
 button.duo span:last-child { transform: translateY(5px); }
 .side-toggle button.duo span { min-height: 26px; }
+/* 10-16 «네모로 칸을 만들지 말고 사선 형태로 칸이 차게» — 버튼을 사선으로 나눠 고른 쪽 조각만 칠한다 */
+button.duo { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; isolation: isolate; }
+button.duo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--mint); transition: clip-path .18s ease; }
+button.duo.first::before { clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%); }
+button.duo.second::before { clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%); }
+button.duo span, button.duo span.on { background: transparent; border-radius: 0; flex: 1; }
+button.duo span.on { color: #082019; }
+.mode-control.single { border: 0; background: transparent; }
+/* 두 칸 폭을 같게(긴 쪽 글자 폭 기준) — 사선이 정확히 가운데를 가르도록 */
+button.duo { display: inline-grid; grid-template-columns: 1fr 1fr; }
+button.duo span { min-width: max-content; padding: 0 12px; }
+.mode-control.single button.duo { display: grid; }
