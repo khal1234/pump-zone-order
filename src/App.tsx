@@ -586,7 +586,8 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
         return <button className="result-card" key={result.title} onClick={() => onChoose(result.title)}>
           <span className="result-index">{String(index + 1).padStart(2, "0")}</span>
           <span className="result-main"><strong>{result.title}</strong><small>{charts.slice(0, 7).join(" · ") || "전용 채널 곡"}</small></span>
-          <span className="result-route">{locations[0] ? <><b>{locations[0].position}</b><small>/ {locations[0].total}</small></> : <small>위치 확인</small>}</span>
+          {/* 10-16 «우측에 숫자 말고 시리즈랑 곡 위치만 · 총 곡수 말고 · 길이가 안 되면 2줄도 돼» */}
+          {(() => { const series = locations.find((item) => item.kind === "series"); return <span className="result-route series">{series ? <><small>{series.label}</small><b>{series.position}</b></> : <small>위치 확인</small>}</span>; })()}
           <span className="arrow">→</span>
         </button>;
       })}</div>}

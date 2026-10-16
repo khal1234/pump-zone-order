@@ -613,3 +613,6 @@ button.brand > div { min-width: max-content; }
 .tour-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .tour-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
 .tour-actions button.primary { border-color: var(--mint); background: var(--mint); color: #082019; }
+.result-route.series { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; column-gap: 6px; row-gap: 0; max-width: 132px; text-align: right; }
+.result-route.series small { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.result-route.series b { font-size: 22px; line-height: 1.1; }
