@@ -613,6 +613,3 @@ button.brand > div { min-width: max-content; }
 .tour-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .tour-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
 .tour-actions button.primary { border-color: var(--mint); background: var(--mint); color: #082019; }
-/* 밝힘 칸과 설명 카드가 같은 길이로 함께 미끄러진다 */
-.tour-spot { transition: left .35s ease, top .35s ease, width .35s ease, height .35s ease; }
-.tour-card { transition: top .35s ease; }

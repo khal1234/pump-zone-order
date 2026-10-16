@@ -448,7 +448,7 @@ export default function App() {
       { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => goHome() },
       { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
       { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(TOUR_SONG); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
-      { target: () => document.querySelector(".zone-song-list [data-first]"), title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); } } },
+      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); } } },
       { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => goHome() },
       { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
       { target: ".recent-strip", title: "⑨ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
@@ -772,26 +772,25 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
     const measure = () => { if (el) setRect(el.getBoundingClientRect()); };
     const onResize = () => { if (window.innerWidth !== width) { width = window.innerWidth; measure(); } };
     // 할 일이 화면을 다시 그린 뒤에 목표를 찾는다
-    // 10-16 «구분동작으로 딱딱 끊기는 느낌 · 가리키는 애랑 설명이랑 한번에 촥 움직이게» — 화면 스크롤과 밝힘·카드 이동을
-    //   같은 순간에 같은 길이(.35초)로 시작한다. 스크롤 뒤 자리를 미리 계산해 그쪽으로 바로 옮긴다.
+    // 10-16 «다음 이동할 때 그냥 순식간에 닫고 이동된 거 빵 뜨고 · 6에서 7로 갈 때 구분동작 보이는 게 불편» —
+    //   넘기는 순간 밝힘·카드를 숨기고(rect=null), 화면을 바로 옮긴 뒤, 새 자리에 한 번에 띄운다(움직이는 애니메이션 없음).
+    setRect(null);
     const timer = window.setTimeout(() => {
       el = typeof step.target === "string" ? document.querySelector(step.target) : step.target();
       if (!el) { const next = index + dir; if (next >= 0 && next < steps.length) setIndex(next); else onClose(); return; }
       const r = el.getBoundingClientRect();
-      const heroBottom = document.querySelector(".hero")?.getBoundingClientRect().bottom ?? 0;
-      let shift = 0;
+      // 고정 머리(검색 묶음 · 존 머리 · 곡 머리) 밑에 오게 — 존 머리에 가려 ⑥ 이 안 보이던 것
+      const heroBottom = Math.max(0, ...[".hero", ".zone-head", ".detail-head"].map((sel) => document.querySelector(sel)?.getBoundingClientRect().bottom ?? 0));
       if (r.top < heroBottom || r.bottom > window.innerHeight - 200) {
-        const maxY = document.documentElement.scrollHeight - window.innerHeight;
-        const goal = Math.min(maxY, Math.max(0, window.scrollY + r.top - heroBottom - 12));
-        shift = goal - window.scrollY;
-        window.scrollTo({ top: goal, behavior: "smooth" });
+        window.scrollTo({ top: Math.max(0, window.scrollY + r.top - heroBottom - 12), behavior: "instant" });
       }
-      setRect(new DOMRect(r.left, r.top - shift, r.width, r.height));
+      measure();
     }, 30);
     window.addEventListener("resize", onResize);
     return () => { window.clearTimeout(timer); window.removeEventListener("resize", onResize); };
   }, [index]);
   if (!step) return null;
+  if (!rect) return <div className="tour" />;  // 넘기는 사이: 아무것도 안 보이게(화면 터치만 막는다)
   const last = index === steps.length - 1;
   const pad = 6;
   const below = !rect || rect.bottom + 190 < window.innerHeight;
