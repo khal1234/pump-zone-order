@@ -545,6 +545,7 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
 
 function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void }) {
   const locations = locationsFor(contract, title, filter);
+  const neighbors = locations[0] ? neighborTriplet(contract, locations[0], title, filter) : [];
   const routeGroups = [
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
@@ -567,6 +568,8 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract:
       <h2>{title}</h2>
     </div>
     {locations.length ? <>
+      {/* 10-16 «14 15 16 을 빼라는거지 · 앞곡 뒷곡 나오는거 목록 빼라는건 아닌데 · 싱글 바로 위에» — 번호·«찾는 곡» 줄 없이 곡 이름만 */}
+      {neighbors.length > 0 && <div className="neighbor-strip compact">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><strong>{item.title}</strong></div>)}</div>}
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>
         <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => onOpenZone({ kind: location.kind, key: location.listKey, label: location.label })}>
@@ -651,6 +654,19 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   return <>
     {shown.map((key) => <ZoneGroup key={key} title={key === side ? "난이도존" : groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount extra={key === side ? sideToggle : undefined} />)}
   </>;
+}
+
+function neighborTriplet(contract: PublicContract, location: LocationItem, title: string, filter: FilterKey) {
+  const rows = listFor(contract, location, filter);
+  const index = rows.findIndex((row) => row.title === title && row.position === location.position);
+  if (index < 0 || rows.length < 2) {
+    const current = rows.find((row) => row.title === title);
+    return current ? [{ ...current, current: true, side: "" }] : [];
+  }
+  const previous = rows[(index - 1 + rows.length) % rows.length];
+  const current = rows[index];
+  const next = rows[(index + 1) % rows.length];
+  return [{ ...previous, current: false, side: "앞 곡" }, { ...current, current: true, side: "찾는 곡" }, { ...next, current: false, side: "뒤 곡" }];
 }
 
 function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterKey) {

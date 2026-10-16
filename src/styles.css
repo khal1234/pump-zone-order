@@ -591,3 +591,5 @@ button.duo span:last-child { bottom: 5px; right: 9px; }
 .detail-view .route-groups { margin-top: 4px; }
 .route-row { padding-top: 6px; padding-bottom: 6px; }
 .recent-strip { margin-top: 14px; }
+.neighbor-strip.compact { margin: 2px 0 4px; }
+.neighbor-strip.compact > div { padding: 8px 10px; min-height: 0; }
