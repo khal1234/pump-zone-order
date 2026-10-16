@@ -11,7 +11,7 @@ interface Suggestion {
 async function api(path: string, options?: RequestInit) {
   const response = await fetch(path, { credentials: "same-origin", ...options, headers: { "Content-Type": "application/json", ...options?.headers } });
   const result = await response.json();
-  if (!response.ok || result.ok === false) throw new Error(result.error || "요청을 처리하지 못했어.");
+  if (!response.ok || result.ok === false) throw new Error(result.error || "요청을 처리하지 못했습니다.");
   return result;
 }
 
@@ -30,19 +30,19 @@ export function FeedbackDialog({ onClose }: { onClose(): void }) {
       await api("/api/suggestions", { method: "POST", body: JSON.stringify({ message: message.trim(), website }) });
       setState("sent");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "잠시 뒤 다시 시도해줘.");
+      setError(reason instanceof Error ? reason.message : "잠시 뒤 다시 시도해 주세요.");
       setState("error");
     }
   }
 
   return <DialogShell title="익명으로 건의하기" eyebrow="PRIVATE FEEDBACK" onClose={onClose}>
-    {state === "sent" ? <div className="feedback-success"><b>건의를 남겼어.</b><p>내용은 관리자만 볼 수 있어. 확인이 필요한 건의는 매일 한 번 알림으로 전달돼.</p><button onClick={onClose}>닫기</button></div> :
+    {state === "sent" ? <div className="feedback-success"><b>건의를 남겼습니다.</b><p>내용은 관리자만 볼 수 있습니다. 확인이 필요한 건의는 매일 한 번 알림으로 전달됩니다.</p><button onClick={onClose}>닫기</button></div> :
       <form onSubmit={(event) => void submit(event)}>
-        <div className="private-notice"><b>건의 내용은 공개되지 않아.</b><p>이름이나 계정 없이 비공개로 저장되고 관리자만 확인해. 답변 기능은 없으니 위치 오류라면 곡명과 존을 함께 적어줘.</p></div>
-        <label htmlFor="suggestion">무엇을 고치거나 추가하면 좋을까?</label>
+        <div className="private-notice"><b>건의 내용은 공개되지 않아.</b><p>이름이나 계정 없이 비공개로 저장되고 관리자만 확인합니다. 답변 기능은 없으니 위치 오류라면 곡명과 존을 함께 적어 주세요.</p></div>
+        <label htmlFor="suggestion">무엇을 고치거나 추가하면 좋을까요?</label>
         <textarea id="suggestion" value={message} onChange={(event) => setMessage(event.target.value)} maxLength={800} placeholder="예: S17에서 ○○곡 순서가 실제 기기와 달라요." autoFocus required />
         <input className="feedback-trap" value={website} onChange={(event) => setWebsite(event.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" />
-        <div className="feedback-actions"><small>{message.length}/800 · 짧게 적어도 돼</small><button type="submit" disabled={!message.trim() || state === "sending"}>{state === "sending" ? "등록 중…" : "비공개 건의 등록"}</button></div>
+        <div className="feedback-actions"><small>{message.length}/800 · 짧게 적어도 됩니다</small><button type="submit" disabled={!message.trim() || state === "sending"}>{state === "sending" ? "등록 중…" : "비공개 건의 등록"}</button></div>
         {error && <p className="feedback-error" role="alert">{error}</p>}
       </form>}
   </DialogShell>;
@@ -85,7 +85,7 @@ export function FeedbackAdmin({ onClose }: { onClose(): void }) {
       setAuthenticated(true);
       setPassword("");
       await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "로그인하지 못했어."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "로그인하지 못했습니다."); }
   }
 
   async function setStatus(row: Suggestion, status: "open" | "done") {
@@ -93,16 +93,16 @@ export function FeedbackAdmin({ onClose }: { onClose(): void }) {
       setError("");
       await api("/api/suggestions", { method: "PATCH", body: JSON.stringify({ pathname: row.pathname, status }) });
       await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "상태를 바꾸지 못했어."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "상태를 바꾸지 못했습니다."); }
   }
 
   async function remove(row: Suggestion) {
-    if (!confirm("이 건의를 완전히 삭제할까? 되돌릴 수 없어.")) return;
+    if (!confirm("이 건의를 완전히 삭제할까요? 되돌릴 수 없습니다.")) return;
     try {
       setError("");
       await api("/api/suggestions", { method: "DELETE", body: JSON.stringify({ pathname: row.pathname }) });
       await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "삭제하지 못했어."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "삭제하지 못했습니다."); }
   }
 
   async function logout() {
@@ -116,14 +116,14 @@ export function FeedbackAdmin({ onClose }: { onClose(): void }) {
       setError("");
       setNotice("");
       const result = await api("/api/suggestion-reminder", { method: "POST" });
-      setNotice(`Discord로 테스트 알림을 보냈어. 현재 미처리 ${result.pending}건이야.`);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Discord 알림을 보내지 못했어."); }
+      setNotice(`Discord로 테스트 알림을 보냈습니다. 현재 미처리 ${result.pending}건입니다.`);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Discord 알림을 보내지 못했습니다."); }
   }
 
   return <DialogShell title="건의 관리" eyebrow="ADMIN ONLY" onClose={onClose} wide>
     {authenticated === null ? <p className="feedback-loading">로그인 상태를 확인하고 있어…</p> : !authenticated ?
       <form onSubmit={(event) => void login(event)}><div className="private-notice"><b>관리자 전용 화면</b><p>관리자 암호는 서버에서만 확인하고 브라우저에는 저장하지 않아.</p></div><label htmlFor="admin-password">관리자 암호</label><input id="admin-password" className="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus required /><div className="feedback-actions"><span></span><button type="submit">로그인</button></div>{error && <p className="feedback-error" role="alert">{error}</p>}</form> :
-      <div className="admin-inbox"><div className="admin-toolbar"><p>미처리 {suggestions.filter((row) => row.status === "open").length}건 · 전체 {suggestions.length}건</p><div><button onClick={() => void testDiscord()}>Discord 알림 테스트</button><button onClick={() => void logout()}>로그아웃</button></div></div>{notice && <p className="feedback-notice" role="status">{notice}</p>}{error && <p className="feedback-error" role="alert">{error}</p>}{suggestions.length ? <div className="suggestion-list">{suggestions.map((row) => <article key={row.id} className={row.status === "done" ? "done" : ""}><div><span>{row.status === "open" ? "미처리" : "처리 완료"}</span><time>{new Date(row.createdAt).toLocaleString("ko-KR")}</time></div><p>{row.message}</p><footer><button onClick={() => void setStatus(row, row.status === "open" ? "done" : "open")}>{row.status === "open" ? "처리 완료" : "다시 열기"}</button><button className="danger" onClick={() => void remove(row)}>삭제</button></footer></article>)}</div> : loadingSuggestions ? <div className="feedback-empty">새 건의 반영을 확인하고 있어…</div> : <div className="feedback-empty">아직 들어온 건의가 없어.</div>}</div>}
+      <div className="admin-inbox"><div className="admin-toolbar"><p>미처리 {suggestions.filter((row) => row.status === "open").length}건 · 전체 {suggestions.length}건</p><div><button onClick={() => void testDiscord()}>Discord 알림 테스트</button><button onClick={() => void logout()}>로그아웃</button></div></div>{notice && <p className="feedback-notice" role="status">{notice}</p>}{error && <p className="feedback-error" role="alert">{error}</p>}{suggestions.length ? <div className="suggestion-list">{suggestions.map((row) => <article key={row.id} className={row.status === "done" ? "done" : ""}><div><span>{row.status === "open" ? "미처리" : "처리 완료"}</span><time>{new Date(row.createdAt).toLocaleString("ko-KR")}</time></div><p>{row.message}</p><footer><button onClick={() => void setStatus(row, row.status === "open" ? "done" : "open")}>{row.status === "open" ? "처리 완료" : "다시 열기"}</button><button className="danger" onClick={() => void remove(row)}>삭제</button></footer></article>)}</div> : loadingSuggestions ? <div className="feedback-empty">새 건의 반영을 확인하고 있어…</div> : <div className="feedback-empty">아직 들어온 건의가 없습니다.</div>}</div>}
   </DialogShell>;
 }
 

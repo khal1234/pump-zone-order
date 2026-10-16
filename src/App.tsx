@@ -186,7 +186,7 @@ export default function App() {
       setLoadState(state);
       const title = new URLSearchParams(location.search).get("song");
       if (title && loaded.songs.some((song) => song.title === title)) setSelectedTitle(title);
-    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "위치 데이터를 불러오지 못했어"));
+    }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "위치 데이터를 불러오지 못했습니다"));
   }, []);
 
   useEffect(() => {
@@ -313,14 +313,12 @@ export default function App() {
         </div>
       </header>
 
-      {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 주고 있어.</div>}
+      {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
       <main>
         <section className="hero">
           <p className="eyebrow">{contract.game.contentThrough} ARCADE ORDER</p>
-          <h1>곡은 기억났는데,<br/><em>어디 있었지?</em></h1>
-          <p className="hero-copy">곡 이름만 입력하면 시리즈존과 난이도존 위치를 바로 찾아줘.</p>
-          <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
+                    <CreditControl mode={creditMode} hearts={hearts} filter={filter} onModeChange={(next) => { setCreditMode(next); setHearts(MODE_MAX[next]); }} onHeartsChange={setHearts} />
           <SearchBox ref={searchRef} query={query} setQuery={updateQuery} clear={clearSearch} onFocus={scrollToSearchSoon} />
         </section>
 
@@ -351,7 +349,7 @@ export default function App() {
 const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: string): void; clear(): void; onFocus(): void }>(function SearchBox({ query, setQuery, clear, onFocus }, ref) {
   return <form className="search-box" role="search" onSubmit={(event) => { event.preventDefault(); (event.currentTarget.querySelector("input") as HTMLInputElement | null)?.blur(); }}>
     <Icon name="search" />
-    <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} onFocus={onFocus} placeholder="곡 이름을 입력해봐" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
+    <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} onFocus={onFocus} placeholder="곡 이름을 입력하세요" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
     {query && <button onClick={clear} aria-label="검색어 지우기"><Icon name="close" /></button>}
     <kbd>⌘ K</kbd>
   </form>;
@@ -378,15 +376,15 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
 
 function SearchLanding({ onChoose, recent }: { onChoose(title: string): void; recent: string[] }) {
   return <>
-    <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아봐</h2></div><p>오락실에서 한 손으로 누르기 좋은 예시야.</p></div>
-    <div className="quick-grid">{QUICK_TITLES.map((title, index) => <button key={title} onClick={() => onChoose(title)}><small>0{index + 1}</small><strong>{title}</strong><span>위치 보기 →</span></button>)}</div>
+    <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아보세요</h2></div><p>오락실에서 한 손으로 누르기 좋은 예시입니다.</p></div>
+    <div className="quick-grid">{QUICK_TITLES.map((title, index) => <button key={title} onClick={() => onChoose(title)}><small>0{index + 1}</small><strong>{title}</strong></button>)}</div>
     {recent.length > 0 && <div className="inline-recents"><b>최근</b>{recent.slice(0, 5).map((title) => <button key={title} onClick={() => onChoose(title)}>{title}</button>)}</div>}
   </>;
 }
 
 function SearchResults({ query, results, contract, filter, onChoose }: { query: string; results: NavSearchHit[]; contract: PublicContract; filter: FilterKey; onChoose(title: string): void }) {
   return <>
-    {results.length === 0 ? <EmptyState title="가까운 곡을 찾지 못했어" copy="문장부호를 빼거나 제목의 앞부분만 입력해봐." /> :
+    {results.length === 0 ? <EmptyState title="가까운 곡을 찾지 못했습니다" copy="문장부호를 빼거나 제목의 앞부분만 입력해 보세요." /> :
       <div className="result-list tight">{results.map((result, index) => {
         const locations = locationsFor(contract, result.title, filter);
         const charts = chartLabels(contract.navIndex.chartsOf[result.title] ?? [], contract.navIndex.levelFold ?? {});
@@ -437,13 +435,13 @@ function SongDetail({ contract, title, filter, onBack }: { contract: PublicContr
         </button>)}</div>
       </div>)}</div>
       {active && <div className="neighbor-panel">
-        <div className="neighbor-head"><span>기기에서 이렇게 보여</span><b>{active.label} · {FILTERS.find((item) => item.key === filter)?.label}</b></div>
+        <div className="neighbor-head"><span>기기에서 이렇게 보입니다</span><b>{active.label} · {FILTERS.find((item) => item.key === filter)?.label}</b></div>
         <div className="neighbor-strip">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><span>{item.position}</span><strong>{item.title}</strong><small>{item.current ? "찾는 곡" : item.side}</small></div>)}</div>
-        <p className="wrap-note">첫 곡과 마지막 곡은 서로 이어져. 난이도존 1번은 RANDOM이고, 곡 위치는 기기 화면 번호 그대로 보여줘.</p>
+        <p className="wrap-note">첫 곡과 마지막 곡은 서로 이어집니다. 난이도존 1번은 RANDOM이고, 곡 위치는 기기 화면 번호 그대로 보여 드립니다.</p>
       </div>}
     </> : <EmptyState
       title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
-      copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있어." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없어."}
+      copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있습니다." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다."}
     />}
     <EvidencePanel rows={evidence} />
   </article>;
@@ -482,7 +480,7 @@ function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
     {rows.length ? <div className="evidence-list">{rows.map((row, index) => <div key={`${row.zone}:${row.position}:${index}`}>
       <span className={`confidence-dot ${confidenceClass(row.grade)}`}></span>
       <p><strong>{row.zone || "위치 자료"} {row.position && `#${row.position}`}</strong><small>{row.grade || "등급 미기록"}{row.source && row.source !== row.grade ? ` · ${row.source}` : ""}</small></p>
-    </div>)}</div> : <p className="muted-box">이 곡의 공개 근거 설명은 아직 연결되지 않았어. 위치 번호와 근거 완성도는 별도로 관리돼.</p>}
+    </div>)}</div> : <p className="muted-box">이 곡의 공개 근거 설명은 아직 연결되지 않았습니다. 위치 번호와 근거 완성도는 별도로 관리됩니다.</p>}
   </section>;
 }
 
@@ -495,7 +493,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
     const countLabel = categoryTotal > rows.length ? `${rows.length}곳 확인 · 전체 ${categoryTotal}칸` : contract.finder.modeRows?.[zone.key] ? `${rows.length}칸` : `${rows.length}곡`;
     return <div className="zone-detail"><button className="back-button" onClick={() => setZone(null)}><Icon name="back" /> 존 목록</button>
       <div className="section-heading"><div><span>{contract.finder.modeSongs?.[zone.key] || contract.finder.modeRows?.[zone.key] ? "MODE" : zone.kind.toUpperCase()}</span><h2>{zone.label}</h2></div><p>{countLabel} · {FILTERS.find((item) => item.key === filter)?.label}</p></div>
-      {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없어.</p></div> :
+      {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
       <div className="zone-song-list">{rows.map((row) => <button key={`${row.position}:${row.title}`} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>)}</div>}
     </div>;
   }
@@ -528,7 +526,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
   };
   const activeGroup = groups[group];
   return <>
-    <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 돼.</p></div>
+    <div className="section-heading"><div><span>ZONE BROWSER</span><h2>존으로 둘러보기</h2></div><p>기기에서 들어갈 메뉴를 먼저 골라도 됩니다.</p></div>
     <div className="zone-tabs" role="tablist" aria-label="존 종류">
       {(["single", "double", "series", "category"] as ZoneGroupKey[]).map((key) => <button key={key} role="tab" aria-selected={group === key} className={group === key ? "active" : ""} onClick={() => setGroup(key)}>{groups[key].title.replace(" 난이도존", "")}</button>)}
     </div>
@@ -549,7 +547,7 @@ function ZoneGroup({ title, color, items, choose, wide }: { title: string; color
 
 function RecentView({ recent, onChoose, onClear }: { recent: string[]; onChoose(title: string): void; onClear(): void }) {
   return <><div className="section-heading"><div><span>ON THIS DEVICE</span><h2>최근 찾은 곡</h2></div>{recent.length > 0 && <button className="text-button" onClick={onClear}>기록 지우기</button>}</div>
-    {recent.length ? <div className="result-list">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong><small>이 기기에만 저장됨</small></span><span className="arrow">→</span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없어" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남아." />}
+    {recent.length ? <div className="result-list">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong><small>이 기기에만 저장됨</small></span><span className="arrow">→</span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없습니다" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남습니다." />}
   </>;
 }
 
@@ -566,5 +564,5 @@ function LoadingState() {
 }
 
 function FatalState({ message }: { message: string }) {
-  return <div className="state-screen error"><div className="brand-mark"><span>↖</span><b>!</b><span>↗</span></div><h1>데이터를 열지 못했어</h1><p>{message}</p><button onClick={() => location.reload()}>다시 불러오기</button></div>;
+  return <div className="state-screen error"><div className="brand-mark"><span>↖</span><b>!</b><span>↗</span></div><h1>데이터를 열지 못했습니다</h1><p>{message}</p><button onClick={() => location.reload()}>다시 불러오기</button></div>;
 }
