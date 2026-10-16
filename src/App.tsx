@@ -21,6 +21,8 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
 type CreditMode = "normal" | "premium";
 type ZoneGroupKey = "single" | "double" | "series" | "category";
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
+const CREDIT_KEY = "pump-zone-credit";
+const HEARTS_KEY = "pump-zone-hearts";
 const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
 
@@ -112,7 +114,14 @@ function categoryEntries(contract: PublicContract, key: string, filter: FilterKe
       if (category.tile === key) rows.push({ title, position: category.pos, total: category.total });
     }
   }
-  return rows.sort((a, b) => a.position - b.position);
+  rows.sort((a, b) => a.position - b.position);
+  // 카테고리 번호는 프리미엄(전체 곡) 기준이다. 다른 하트 조건이면 그 조건에서 못 고르는 곡(시리즈 위치가 없는 곡)을 빼고 번호를 다시 센다.
+  if (filter === "all") return rows;
+  const kept = rows.filter((row) => {
+    const series = contract.navIndex.series[row.title];
+    return !series || pos(series.pos, filter) !== undefined;
+  });
+  return kept.map((row, index) => ({ ...row, position: index + 1, total: kept.length }));
 }
 
 function listFor(contract: PublicContract, location: LocationItem, filter: FilterKey): Array<{ title: string; position: number }> {
@@ -163,8 +172,20 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedTitle, setSelectedTitle] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("search");
-  const [creditMode, setCreditMode] = useState<CreditMode>("normal");
-  const [hearts, setHearts] = useState(MODE_MAX.normal);
+  // 10-16 «새로고침해도 노말·프리미엄·하트 개수 유지» — 이 기기에만 기억한다.
+  const [creditMode, setCreditMode] = useState<CreditMode>(() => {
+    try { return localStorage.getItem(CREDIT_KEY) === "premium" ? "premium" : "normal"; } catch { return "normal"; }
+  });
+  const [hearts, setHearts] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem(HEARTS_KEY));
+      const max = MODE_MAX[localStorage.getItem(CREDIT_KEY) === "premium" ? "premium" : "normal"];
+      return saved >= 1 && saved <= max ? saved : max;
+    } catch { return MODE_MAX.normal; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(CREDIT_KEY, creditMode); localStorage.setItem(HEARTS_KEY, String(hearts)); } catch { /* 저장 못 하는 브라우저면 기본값 */ }
+  }, [creditMode, hearts]);
   const filter = heartsToFilter(creditMode, hearts);
   const [zone, setZone] = useState<ZoneSelection | null>(null);
   const [recent, setRecent] = useState<string[]>(() => {
