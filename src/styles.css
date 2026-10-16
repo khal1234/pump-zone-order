@@ -385,3 +385,64 @@ main { padding-top: 12px; }
   .app-shell { padding-bottom: 84px; }
 }
 @media (max-width: 560px) { .top-actions button { width: 32px; height: 32px; border-radius: 9px; } .top-actions button svg { width: 15px; height: 15px; } }
+/* 10-16 «여백 좀 넣어 · 하트 같은 눌러야 하는 건 위아래 높이 · 폰에 따라 다르게 가능한가»
+   — 누르는 칸은 손가락 기준 최소 44px(애플 44pt · 안드로이드 48dp 권장 사이), 칸 사이 여백은 화면 높이에 비례(svh):
+     짧은 폰(높이 560px 안팎)은 8px 쪽, 긴 폰(800px 이상)은 20px 쪽으로 늘어나 한 화면 안에서 고르게 퍼진다. */
+:root { --gap: clamp(8px, 2.2svh, 20px); }
+.eyebrow { margin-bottom: var(--gap); }
+.credit-control { margin-top: 0; }
+.mode-control button { min-height: 44px; }
+.heart-control { min-height: 44px; padding-top: 0; padding-bottom: 0; }
+.heart-buttons button { min-width: 36px; min-height: 44px; font-size: 21px; }
+.credit-control + .search-box { margin-top: var(--gap); }
+.search-box { height: 48px; }
+.recent-strip { margin-top: var(--gap); margin-bottom: var(--gap); }
+.recent-chips button { min-height: 34px; }
+.section-heading { margin-bottom: calc(var(--gap) * .8); }
+.quick-grid button { min-height: 44px; }
+.data-footer { margin-top: var(--gap); }
+@media (max-width: 560px) {
+  .eyebrow { margin-bottom: var(--gap); }
+  .search-box { height: 46px; }
+  .quick-grid button { min-height: 44px; padding-top: 0; padding-bottom: 0; align-items: center; }
+  .data-footer { margin-top: var(--gap); }
+}
+.heart-buttons button { min-width: 30px; padding: 0; }
+.heart-control { padding-left: 8px; padding-right: 10px; gap: 2px 6px; }
+.heart-count { white-space: nowrap; }
+.heart-control { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "hearts count"; }
+.heart-buttons { min-width: 0; }
+.heart-buttons button { flex: 1 1 0; min-width: 0; max-width: 34px; }
+@media (max-width: 420px) { .mode-control button small { display: none; } .mode-control button { padding-left: 11px; padding-right: 11px; } }   /* 좁은 폰: «4♥·6♥» 는 오른쪽 하트 칸이 보여 주므로 빼고 하트 칸을 넓힌다(프리미엄 6칸이 21px→ 넓게) */
+
+/* 10-16 «스크롤 내려도 위쪽에 80곡 저 문구까진 고정» — 존 안 곡 목록을 열면 화면 높이를 고정하고 목록만 스크롤 */
+.app-shell.zone-open { height: 100svh; min-height: 0; padding-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+.app-shell.zone-open main { flex: 1; min-height: 0; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; padding-bottom: 0; }
+.app-shell.zone-open .content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.app-shell.zone-open .zone-detail { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.app-shell.zone-open .zone-song-list { flex: 1; min-height: 0; overflow-y: auto; align-content: start; padding-bottom: 96px; overscroll-behavior: contain; }
+.app-shell.zone-open .data-footer { display: none; }
+.zone-detail .back-button { margin-bottom: 4px; }
+.zone-detail .section-heading { margin-bottom: 8px; }
+/* 10-16 «존 파인더 옆에 P 왜 중앙에 안 들어가고 왼쪽으로» — 작은 화면에서 양옆 화살표를 숨기면 3칸 격자의 첫 칸에 P 가 쏠렸다 */
+@media (max-width: 560px) { .brand-mark { grid-template-columns: 1fr; } }
+/* 키 작은 폰(높이 600px 이하) — 첫 화면이 아래 메뉴에 가리지 않게 더 조인다 */
+@media (max-height: 600px) {
+  :root { --gap: 6px; }
+  .topbar { height: 40px; }
+  .search-box { height: 42px; }
+  .quick-grid button { min-height: 40px; }
+  .recent-chips button { min-height: 30px; }
+  .section-heading h2 { font-size: 18px; }
+}
+/* 고정 머리 판 고침 — 세로 flex 안에서 margin:auto 인 머리·본문이 내용 폭으로 줄던 것 · 목록 줄이 눌려 겹치던 것 */
+.app-shell.zone-open > .topbar, .app-shell.zone-open > main { width: 100%; box-sizing: border-box; flex: none; }
+.app-shell.zone-open > main { flex: 1 1 auto; }
+.app-shell.zone-open .hero { width: 100%; }
+.app-shell.zone-open .zone-song-list { display: flex; flex-direction: column; gap: 4px; }
+.app-shell.zone-open .zone-song-list > * { flex: none; }
+/* 10-16 «검색 존목록 누르는거 2줄 말고 1줄로» — 아이콘과 글자를 옆으로, 높이 줄임 */
+.bottom-nav { height: 50px; }
+.bottom-nav button { flex-direction: row; gap: 6px; }
+.bottom-nav button span { font-size: 12px; }
+.app-shell.zone-open .zone-song-list { padding-bottom: 76px; }

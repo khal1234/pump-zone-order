@@ -318,7 +318,7 @@ export default function App() {
   if (!contract) return <LoadingState />;
 
   return (
-    <div className="app-shell">
+    <div className={tab === "zones" && zone ? "app-shell zone-open" : "app-shell"}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
