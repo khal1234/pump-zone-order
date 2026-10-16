@@ -583,3 +583,11 @@ button.duo span:last-child { bottom: 5px; right: 9px; }
 .side-toggle button.duo span:last-child { bottom: 3px; right: 8px; }
 .side-toggle button.duo span:first-child, .side-toggle button.duo span:last-child { transform: none; }
 .side-toggle button.duo { min-height: 44px; }
+/* 10-16 하단 메뉴 없앰(검색·존 목록 한 화면) · 곡 화면 머리 = [결과로 … 공유] 줄 밑에 곡 이름 · 여백 최소 */
+.app-shell, .app-shell.zone-open { padding-bottom: 12px; }
+.detail-head { display: block; padding: 2px 0 4px; }
+.detail-bar { display: flex; justify-content: space-between; align-items: center; }
+.detail-head h2 { margin: 4px 0 0; text-align: left; font-size: 20px; white-space: normal; }
+.detail-view .route-groups { margin-top: 4px; }
+.route-row { padding-top: 6px; padding-bottom: 6px; }
+.recent-strip { margin-top: 14px; }

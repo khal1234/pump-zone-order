@@ -25,7 +25,6 @@ type ZoneGroupKey = "single" | "double" | "series" | "category";
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const CREDIT_KEY = "pump-zone-credit";
 const HEARTS_KEY = "pump-zone-hearts";
-const QUICK_TITLES = ["노스텔지어", "네이드 네이드", "클리너 - SHORT CUT -", "알테일"];
 const RECENT_KEY = "pump-zone-recent-v1";
 
 function pos(set: PositionSet | undefined, filter: FilterKey): number | undefined {
@@ -322,6 +321,7 @@ export default function App() {
         setQuery("");
         setTab("zones");
         setZone(null);
+        scrollTopNext.current = true;
         return;
       }
       if (title) {
@@ -408,6 +408,7 @@ export default function App() {
       history.replaceState({ tab: "zones" }, "", location.href);
       history.pushState({ zone: next, scroll: 0 }, "", location.href);
       pendingScroll.current = "first";
+      setTab("zones");
       setZone(next);
       return;
     }
@@ -469,8 +470,12 @@ export default function App() {
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
           {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onOpenZone={openZoneFromSong} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
           {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
-          {tab === "search" && !selectedTitle && !query.trim() && <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />}
-          {tab === "zones" && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={openZone} onChoose={chooseTitle} />}
+          {/* 10-16 «존목록 검색 둘 말고 하나로 합쳐 · 빠른 시작 다 빼고 · 최근 찾기를 맨 밑에» — 첫 화면 = 검색칸 밑에 존 목록, 맨 밑에 최근 찾기 */}
+          {!selectedTitle && !query.trim() && (tab === "search" || (tab === "zones" && !zone)) && <>
+            <ZoneBrowser contract={contract} filter={filter} zone={null} setZone={openZone} onChoose={chooseTitle} />
+            <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />
+          </>}
+          {tab === "zones" && zone && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={openZone} onChoose={chooseTitle} />}
           {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
       </main>
@@ -479,10 +484,6 @@ export default function App() {
 
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {adminOpen && <FeedbackAdmin onClose={closeAdmin} />}
-      <nav className="bottom-nav" aria-label="주요 메뉴">
-        <NavButton active={tab === "search"} icon="search" label="검색" onClick={() => changeTab("search")} />
-        <NavButton active={tab === "zones"} icon="zones" label="존 목록" onClick={() => changeTab("zones")} />
-      </nav>
     </div>
   );
 }
@@ -523,8 +524,6 @@ function SearchLanding({ onChoose, recent, onMore }: { onChoose(title: string): 
   return <>
     {recent.length > 0 && <div className="recent-strip"><div className="recent-head"><b>최근 찾기</b>{recent.length > RECENT_SHOWN && <button className="text-button" onClick={onMore}>더보기</button>}</div>
       <div className="recent-chips">{recent.slice(0, RECENT_SHOWN).map((title) => <button key={title} onClick={() => onChoose(title)}>{title}</button>)}</div></div>}
-    <div className="section-heading"><div><span>빠른 시작</span><h2>이렇게 찾아보세요</h2></div></div>
-    <div className="quick-grid">{QUICK_TITLES.map((title, index) => <button key={title} onClick={() => onChoose(title)}><small>0{index + 1}</small><strong>{title}</strong></button>)}</div>
   </>;
 }
 
@@ -546,10 +545,6 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
 
 function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void }) {
   const locations = locationsFor(contract, title, filter);
-  const [activeId, setActiveId] = useState(locations[0]?.id ?? "");
-  useEffect(() => setActiveId(locations[0]?.id ?? ""), [title, filter]);
-  const active = locations.find((item) => item.id === activeId) ?? locations[0];
-  const neighbors = active ? neighborTriplet(contract, active, title, filter) : [];
   const routeGroups = [
     { label: "싱글", items: locations.filter((item) => item.kind === "level" && item.sublabel === "싱글") },
     { label: "더블", items: locations.filter((item) => item.kind === "level" && item.sublabel === "더블") },
@@ -566,10 +561,10 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract:
 
   return <article className="detail-view">
     {/* 10-16 «결과로 공유도 스크롤 내리면 위에 고정 · piu-644 이건 왜 띄우는거야» — 버튼·곡 이름 한 줄을 검색 묶음 밑에 고정, 곡 번호는 뺀다 */}
+    {/* 10-16 «14 15 16 찾는 곡 줄 빼 · 위아래 여백 최대한 줄이고 · 결과로 밑에 위치 · 그 밑에 싱글 더블» */}
     <div className="detail-head">
-      <button className="back-button" onClick={onBack}><Icon name="back" /> 결과로</button>
+      <div className="detail-bar"><button className="back-button" onClick={onBack}><Icon name="back" /> 결과로</button><button className="share-button" onClick={() => void share()}><Icon name="share" /> 공유</button></div>
       <h2>{title}</h2>
-      <button className="share-button" onClick={() => void share()}><Icon name="share" /> 공유</button>
     </div>
     {locations.length ? <>
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
@@ -579,29 +574,12 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract:
           <span><b>{location.position}</b>/{location.total}</span>
         </button>)}</div>
       </div>)}</div>
-      {active && <div className="neighbor-panel">
-        {/* 10-16 «기기에서 이렇게 보입니다 / S2 · 노말에서 고를 수 있는 곡 · 첫 곡과 마지막 곡은 … 이건 빼» */}
-        <div className="neighbor-strip">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><span>{item.position}</span><strong>{item.title}</strong><small>{item.current ? "찾는 곡" : item.side}</small></div>)}</div>
-      </div>}
     </> : <EmptyState
       title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
       copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있습니다." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다."}
     />}
     {/* 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» */}
   </article>;
-}
-
-function neighborTriplet(contract: PublicContract, location: LocationItem, title: string, filter: FilterKey) {
-  const rows = listFor(contract, location, filter);
-  const index = rows.findIndex((row) => row.title === title && row.position === location.position);
-  if (index < 0 || rows.length < 2) {
-    const current = rows.find((row) => row.title === title);
-    return current ? [{ ...current, current: true, side: "" }] : [];
-  }
-  const previous = rows[(index - 1 + rows.length) % rows.length];
-  const current = rows[index];
-  const next = rows[(index + 1) % rows.length];
-  return [{ ...previous, current: false, side: "앞 곡" }, { ...current, current: true, side: "찾는 곡" }, { ...next, current: false, side: "뒤 곡" }];
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
@@ -690,10 +668,6 @@ function RecentView({ recent, onChoose, onClear }: { recent: string[]; onChoose(
   return <><div className="section-heading"><div><span>ON THIS DEVICE</span><h2>최근 찾은 곡</h2></div>{recent.length > 0 && <button className="text-button" onClick={onClear}>기록 지우기</button>}</div>
     {recent.length ? <div className="result-list tight">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong></span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없습니다" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남습니다." />}
   </>;
-}
-
-function NavButton({ active, icon, label, onClick }: { active: boolean; icon: "search" | "zones" | "recent"; label: string; onClick(): void }) {
-  return <button className={active ? "active" : ""} onClick={onClick}><Icon name={icon} /><span>{label}</span></button>;
 }
 
 function EmptyState({ title, copy }: { title: string; copy: string }) {
