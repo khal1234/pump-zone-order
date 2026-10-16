@@ -579,6 +579,8 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone }: { contract:
     </div>
     {locations.length ? <>
       {/* 10-16 «14 15 16 을 빼라는거지 · 앞곡 뒷곡 나오는거 목록 빼라는건 아닌데 · 싱글 바로 위에» — 번호·«찾는 곡» 줄 없이 곡 이름만 */}
+      {/* 10-16 «어떤거 기준으로 아포칼립스 앞이 추격인진 모르네 · 곡 이름 바로 밑 가운데에» — 앞뒤 곡의 기준 존·번호 */}
+      {neighbors.length > 0 && <p className="neighbor-basis">{locations[0].label} {locations[0].position}번 기준</p>}
       {neighbors.length > 0 && <div className="neighbor-strip compact">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><strong>{item.title}</strong></div>)}</div>}
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>

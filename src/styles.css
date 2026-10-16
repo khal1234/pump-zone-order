@@ -594,3 +594,4 @@ button.duo span:last-child { bottom: 5px; right: 9px; }
 .neighbor-strip.compact { margin: 2px 0 4px; }
 .neighbor-strip.compact > div { padding: 8px 10px; min-height: 0; }
 button.brand { border: 0; padding: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.neighbor-basis { margin: 2px 0 2px; text-align: center; color: var(--muted); font-size: 12px; font-weight: 700; }
