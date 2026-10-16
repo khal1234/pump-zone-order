@@ -481,3 +481,6 @@ main { padding-top: 12px; }
 .detail-head { position: sticky; top: var(--hero-h, 0px); z-index: 5; display: flex; align-items: center; gap: 10px; padding: 4px 0 8px; background: var(--bg); }
 .detail-head .back-button, .detail-head .share-button { margin: 0; flex: none; }
 .detail-head h2 { flex: 1; min-width: 0; margin: 0; font-size: 20px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+/* 10-16 «Level 과 S2 크기가 달라 이질적이야 같게 해 색이랑 · 붙여» — 한 낱말처럼 같은 글꼴·크기·색 */
+.zone-title { gap: 0.3em; align-items: baseline; }
+.zone-title span, .zone-title h2 { color: var(--text); font: 800 22px/1 "DM Sans", sans-serif; letter-spacing: 0; }
