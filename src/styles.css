@@ -548,3 +548,24 @@ button.duo span.on { color: #082019; }
 button.duo { display: inline-grid; grid-template-columns: 1fr 1fr; }
 button.duo span { min-width: max-content; padding: 0 12px; }
 .mode-control.single button.duo { display: grid; }
+/* 10-16 «노말 좀 더 위로 · 프리미엄 좀 더 아래로 · 사선은 1·3사분면 꼭짓점 다 닿게 · 글자 좀 더 키워» —
+   사선 = 오른쪽 위 꼭짓점 ↔ 왼쪽 아래 꼭짓점. 고른 쪽 삼각형만 칠한다. */
+button.duo.first::before { clip-path: polygon(0 0, 100% 0, 0 100%); }
+button.duo.second::before { clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+button.duo span:first-child { transform: translateY(-9px); justify-content: flex-start; }
+button.duo span:last-child { transform: translateY(9px); justify-content: flex-end; }
+.mode-control.single button.duo { min-height: 56px; }
+.mode-control.single button.duo span { font-size: 15px; }
+.side-toggle button.duo { min-height: 42px; }
+.side-toggle button.duo span:first-child { transform: translateY(-6px); }
+.side-toggle button.duo span:last-child { transform: translateY(6px); }
+/* 10-16 «사선 말고 물결로 차게 해 · 선으로 닿으니까 그닥 안 이뻐» — 오른쪽 위 꼭짓점 → 왼쪽 아래 꼭짓점을 S자 곡선으로 가른다 */
+button.duo.first::before, button.duo.second::before { clip-path: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+button.duo.first::before {
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 C40 15 60 85 0 100 Z' fill='black'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 C40 15 60 85 0 100 Z' fill='black'/></svg>");
+}
+button.duo.second::before {
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 C40 15 60 85 0 100 H100 Z' fill='black'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 C40 15 60 85 0 100 H100 Z' fill='black'/></svg>");
+}
