@@ -467,3 +467,9 @@ main { padding-top: 12px; }
 .zone-title h2 { margin: 0; font-size: 24px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 10-16 «검색은 스크롤 내릴 일이 없는데 밑에 왜캐 빈 공간이 많지» — min-height 100vh 에 하단 여백 100px 이 더해져 한 화면을 넘던 것 */
 .app-shell, .app-shell.zone-open { box-sizing: border-box; }
+/* 10-16 «시리즈존 카테고리는 4열로» — 넘치는 이름은 App.tsx 가 scaleX 로 폭에 맞춘다 */
+@media (max-width: 560px) {
+  .zone-grid.wide { grid-template-columns: repeat(4, 1fr); }
+  .zone-grid.wide button { padding: 8px 2px; overflow: hidden; }
+  .zone-grid.wide strong { display: inline-block; white-space: nowrap; transform-origin: center; overflow: visible; text-overflow: clip; max-width: none; flex: none; }
+}

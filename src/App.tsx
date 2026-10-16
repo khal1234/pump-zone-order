@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { loadContract, type LoadState } from "./data";
 import { FeedbackAdmin, FeedbackDialog } from "./Feedback";
 import type {
@@ -586,6 +586,19 @@ function EvidencePanel({ rows }: { rows: EvidenceRow[] }) {
 }
 
 function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
+  // 10-16 «시리즈존 카테고리는 4열로 · 가로 넘치면 글자 가로 폭 맞춤» — 칸보다 긴 이름만 가로로 줄인다(높이는 그대로).
+  useLayoutEffect(() => {
+    function fit() {
+      for (const label of document.querySelectorAll<HTMLElement>(".zone-grid.wide strong")) {
+        label.style.transform = "";
+        const room = (label.parentElement?.clientWidth ?? 0) - 8;
+        if (room > 0 && label.scrollWidth > room) label.style.transform = `scaleX(${room / label.scrollWidth})`;
+      }
+    }
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  });
   if (zone) {
     const rows = zoneRows(contract, zone, filter);
     const category = zone.kind === "category" ? categoryEntries(contract, zone.key, filter) : [];
