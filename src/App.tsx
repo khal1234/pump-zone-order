@@ -252,7 +252,11 @@ export default function App() {
         const first = document.querySelector<HTMLElement>(".zone-song-list [data-first]");
         const head = document.querySelector<HTMLElement>(".zone-head");
         const hero = document.querySelector<HTMLElement>(".hero");
-        if (first) top = first.getBoundingClientRect().top + window.scrollY - (hero?.offsetHeight ?? 0) - (head?.offsetHeight ?? 0) - 6;
+        // 10-16 «1번 위치가 처음에 들어갈 때 화면 상단에 있는데 중앙으로 · 위로 스크롤 해도 된다는거 인식할 수 있게» —
+        // 고정 머리 밑 ~ 하단 메뉴 위 사이 가운데에 첫 곡을 둔다(위에 지난 번호들이 보인다).
+        const headBottom = (hero?.offsetHeight ?? 0) + (head?.offsetHeight ?? 0);
+        const navTop = document.querySelector<HTMLElement>(".bottom-nav")?.getBoundingClientRect().top ?? window.innerHeight;
+        if (first) top = first.getBoundingClientRect().top + window.scrollY - (headBottom + (navTop - headBottom) / 2 - first.offsetHeight / 2);
       }
       window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
     }
