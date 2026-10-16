@@ -221,6 +221,7 @@ export default function App() {
   const [returnZone, setReturnZone] = useState(false);
   const pendingScroll = useRef<number | "first" | null>(null);
   const scrollTopNext = useRef(false);
+  const pendingSongScroll = useRef<number | null>(null);
   useEffect(() => { history.scrollRestoration = "manual"; }, []);
   // 고정 검색 묶음 높이 — ResizeObserver 가 늦거나 안 도는 경우(숨은 탭)에도 그리기 직후 바로 맞춘다.
   useLayoutEffect(() => {
@@ -236,6 +237,11 @@ export default function App() {
     return () => observer.disconnect();
   }, [contract]);
   useEffect(() => {
+    if (pendingSongScroll.current !== null && selectedTitle) {
+      window.scrollTo({ top: pendingSongScroll.current, behavior: "instant" });
+      pendingSongScroll.current = null;
+      return;
+    }
     if (scrollTopNext.current) {
       scrollTopNext.current = false;
       window.scrollTo({ top: 0, behavior: "instant" });
@@ -322,6 +328,9 @@ export default function App() {
         setQuery(title);
         setTab("search");
         setZone(null);
+        // 10-16 «S4 누르면 이동 후 본래로 돌아올 때 왜 스크롤 아래로 끌어당겨지냐» — 존 목록의 깊은 스크롤이 곡 화면에 남던 것.
+        // 곡 화면을 떠날 때 적어 둔 자리(없으면 맨 위)로 돌린다.
+        pendingSongScroll.current = (history.state as { songScroll?: number } | null)?.songScroll ?? 0;
       }
     }
     window.addEventListener("popstate", restoreUrlState);
@@ -409,6 +418,7 @@ export default function App() {
   // 10-16 «버튼 눌리는거 불 안 들어오게 · 버튼 누르면 그 레벨대 곡 목록으로 · 시리즈존 누르면 시리즈 존 가고» —
   // 곡 화면의 위치 단추는 그 존 목록을 연다. 곡 화면은 기록에 남아 뒤로가기로 돌아온다.
   function openZoneFromSong(next: ZoneSelection) {
+    history.replaceState({ ...(history.state ?? {}), songScroll: window.scrollY }, "", location.href);
     history.pushState({ zone: next, scroll: 0 }, "", location.pathname);
     pendingScroll.current = "first";
     setSelectedTitle(null);
