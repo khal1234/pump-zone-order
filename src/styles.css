@@ -353,3 +353,35 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 main { padding-top: 12px; }
 .hero .eyebrow { margin-top: 0; }
 @media (max-width: 560px) { main { padding-top: 10px; } }
+/* 10-16 «한 페이지 내에 다 들어와야해 · 검색 칸 줄여 · 노말 프리미엄이랑 하트 수 한줄로 · 맨 위 펌프 존 줄여 · 알테일 밑 익명 건의까지 여백 줄여» */
+.content { min-height: 0; }
+.data-footer { margin-top: 14px; padding-top: 10px; padding-bottom: 10px; }
+.credit-control { grid-template-columns: auto 1fr; }
+.heart-control { grid-template-areas: "title hearts count"; padding: 4px 9px; }
+.heart-control .heart-title { display: none; }
+.heart-buttons button { font-size: 16px; padding: 1px; }
+.mode-control { padding: 3px; }
+.mode-control button { min-width: 0; padding: 6px 9px; }
+.search-box { height: 46px; border-radius: 14px; padding: 0 12px 0 14px; }
+.search-box input { font-size: 15px; }
+.recent-strip { margin-bottom: 10px; }
+.recent-head { margin-bottom: 4px; }
+.recent-head .text-button { padding: 3px 9px; font-size: 11px; }
+.recent-chips button { padding: 4px 9px; }
+.section-heading h2 { font-size: 20px; }
+@media (max-width: 560px) {
+  .topbar { height: 46px; padding: 0 15px; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 9px; }
+  .brand-mark b { font-size: 15px; }.brand-mark span { display: none; }
+  .brand { gap: 8px; }
+  .brand strong { font-size: 10px; }.brand small { display: none; }
+  .theme-toggle, .topbar > button { width: 32px; height: 32px; }
+  main { padding-top: 4px; }
+  .eyebrow { margin-bottom: 8px; font-size: 10px; }
+  .credit-control { grid-template-columns: auto 1fr; gap: 6px; }
+  .search-box { height: 44px; }
+  .quick-grid button { min-height: 0; padding: 8px 11px; }
+  .data-footer { margin-top: 12px; padding: 8px 15px; }
+  .app-shell { padding-bottom: 84px; }
+}
+@media (max-width: 560px) { .top-actions button { width: 32px; height: 32px; border-radius: 9px; } .top-actions button svg { width: 15px; height: 15px; } }
