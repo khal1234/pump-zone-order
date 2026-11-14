@@ -30,7 +30,14 @@ check("site consumes common search", appSource.includes("NAV_SEARCH.rankTitles")
 check("offline cache is explicit", dataSource.includes('state: "cached"') && appSource.includes("오프라인 저장본"));
 check("no personal/local markers", !/c:\\users|d:\\xsanity|play_history|my_records|credential/i.test(JSON.stringify(contract)));
 const originalAnchorShift = contract.navIndex.cats["러브 이즈 어 데인저 존 2 (Try To B.P.M)"]?.find((row) => row.tile === "ORIGINAL");
-check("ORIGINAL inferred positions retain their evidence grade", (originalAnchorShift?.pos ?? 0) > 0 && originalAnchorShift.src === "구간확정" && originalAnchorShift.seen === "닻 밀림");
+check("ORIGINAL inferred positions retain their evidence grade", (originalAnchorShift?.pos ?? 0) > 0 && originalAnchorShift.src === "구간확정");
+// 11-14 점검 — 화면이 안 쓰는 근거 표·판독 작업 메모는 공개 자료에 없고, 기준일·기체에서 빠진 곡 목록은 있다.
+check("public data ships no unused evidence or work memos", !("evidence" in contract) && !Object.values(contract.navIndex.cats).some((rows) => rows.some((row) => "seen" in row)));
+check("data date is shown", /^\d{4}-\d{2}-\d{2}$/.test(contract.dataDate ?? "") && appSource.includes("contract.dataDate"));
+check("songs pulled from the cabinet are named, not silently replaced", (contract.navIndex.gone ?? []).includes("퀸카") && !titles0.has("퀸카") && appSource.includes("기체에서 빠진 곡입니다") && appSource.includes("setMissingSong(title)"));
+check("song-opened zone list marks and centres that song", appSource.includes("data-mark=") && appSource.includes('pendingScroll.current = mark ? "mark" : "first"'));
+check("unavailable songs say why and what to do", appSource.includes("하트 가득") && appSource.includes("unavailableShort(why)") && !appSource.includes("현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다"));
+check("shortcut label follows the platform", appSource.includes('IS_MAC ? "⌘ K" : "Ctrl K"'));
 // 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» — 근거는 자료에만 남고 곡 화면에는 안 나온다.
 check("song details hide the evidence panel", !appSource.includes("<EvidencePanel") && !appSource.includes("확인 정도"));
 const s17 = contract.finder.levelSongs.S17;

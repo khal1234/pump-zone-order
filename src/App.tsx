@@ -21,6 +21,7 @@ const FILTERS: Array<{ key: FilterKey; label: string; short: string }> = [
   { key: "p_onlyshort", label: "프리미엄 · 숏컷만", short: "숏컷만" },
 ];
 type CreditMode = "normal" | "premium";
+type ZoneMark = { title: string; position: number };
 type ZoneGroupKey = "single" | "double" | "series" | "category";
 const MODE_MAX: Record<CreditMode, number> = { normal: 4, premium: 6 };
 const CREDIT_KEY = "pump-zone-credit";
@@ -52,6 +53,36 @@ function heartsToFilter(mode: CreditMode, hearts: number): FilterKey {
   if (hearts === 2) return `${premium}nofullremix` as FilterKey;
   return `${premium}onlyshort` as FilterKey;
 }
+
+// 11-14 점검 — 지금 조건에서 못 고르는 곡이 왜 못 고르는지·무엇을 하면 나오는지. null 이면 지금 고를 수 있다.
+//   하트를 늘려 나오면 그 하트 수, 노말에서 하트를 다 채워도 안 나오면 프리미엄 전용.
+type Unavailable = { hearts: number } | { premium: true } | { never: true };
+function unavailable(contract: PublicContract, title: string, mode: CreditMode, hearts: number): Unavailable | null {
+  if (locationsFor(contract, title, heartsToFilter(mode, hearts)).length) return null;
+  for (let h = hearts + 1; h <= MODE_MAX[mode]; h += 1) {
+    if (locationsFor(contract, title, heartsToFilter(mode, h)).length) return { hearts: h };
+  }
+  if (mode === "normal" && locationsFor(contract, title, heartsToFilter("premium", MODE_MAX.premium)).length) return { premium: true };
+  return { never: true };
+}
+
+function unavailableShort(reason: Unavailable): string {
+  if ("hearts" in reason) return `하트 ${reason.hearts}개부터`;
+  if ("premium" in reason) return "프리미엄 전용";
+  return "고를 수 없음";
+}
+
+// 기체에서 빠진 곡(navIndex.gone) 가운데 검색어와 맞는 것 — 글자·공백·문장부호를 빼고 견준다
+function squash(text: string): string {
+  return text.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+}
+function goneMatches(contract: PublicContract, query: string): string[] {
+  const q = squash(query);
+  if (q.length < 2) return [];
+  return (contract.navIndex.gone ?? []).filter((title) => squash(title).includes(q));
+}
+
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 function levelLabel(channel: string, folds: Record<string, string>): string {
   return Object.values(folds).includes(channel) ? `${channel} OVER` : channel;
@@ -230,7 +261,11 @@ export default function App() {
   // 10-16 «검색으로 들어가면 위치 좌우는 굳이 나올 필요 없어 · 존에서 눌러 들어가면 그 존과 관련시켜 좌우 곡» — 곡을 연 존
   const [songZone, setSongZone] = useState<ZoneSelection | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
-  const pendingScroll = useRef<number | "first" | null>(null);
+  const pendingScroll = useRef<number | "first" | "mark" | null>(null);
+  // 11-14 점검 — 곡 화면에서 연 존 목록은 그 곡 줄을 가운데에 두고 표시한다(존 타일에서 연 목록은 10-16 대로 첫 곡).
+  const [zoneMark, setZoneMark] = useState<ZoneMark | null>(null);
+  // 주소로 연 곡이 없을 때(기체에서 빠진 곡·없는 이름) 한 줄로 알린다
+  const [missingSong, setMissingSong] = useState<string | null>(null);
   const scrollTopNext = useRef(false);
   const pendingSongScroll = useRef<number | null>(null);
   useEffect(() => { history.scrollRestoration = "manual"; }, []);
@@ -265,8 +300,9 @@ export default function App() {
       let top = typeof target === "number" ? target : 0;
       // 10-16 «위에 번호로도 이동할 경우가 있어 … 스크롤을 위로 올려서 마지막 번호가 위에서도 보일 수 있게» —
       // 목록 뒤 절반을 위에 깔았으니, 처음 열 때는 첫 곡이 고정 머리 바로 밑에 오게 내려 둔다.
-      if (target === "first") {
-        const first = document.querySelector<HTMLElement>(".zone-song-list [data-first]");
+      if (target === "first" || target === "mark") {
+        const first = (target === "mark" ? document.querySelector<HTMLElement>(".zone-song-list [data-mark]") : null)
+          ?? document.querySelector<HTMLElement>(".zone-song-list [data-first]");
         const head = document.querySelector<HTMLElement>(".zone-head");
         const hero = document.querySelector<HTMLElement>(".hero");
         // 10-16 «1번 위치가 처음에 들어갈 때 화면 상단에 있는데 중앙으로 · 위로 스크롤 해도 된다는거 인식할 수 있게» —
@@ -290,6 +326,7 @@ export default function App() {
       setLoadState(state);
       const title = new URLSearchParams(location.search).get("song");
       if (title && loaded.songs.some((song) => song.title === title)) setSelectedTitle(title);
+      else if (title) { setMissingSong(title); clearSongFromUrl(); }
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "위치 데이터를 불러오지 못했습니다"));
   }, []);
 
@@ -311,11 +348,12 @@ export default function App() {
       const title = new URLSearchParams(location.search).get("song");
       setSelectedTitle(title);
       // 10-16 «존 목록에서 곡 누르고 뒤로가기 하면 존 목록으로» — 곡을 연 자리가 존이면 그 존과 목록 스크롤로 돌아간다.
-      const back = history.state as { zone?: ZoneSelection; scroll?: number } | null;
+      const back = history.state as { zone?: ZoneSelection; scroll?: number; mark?: ZoneMark | null } | null;
       if (!title && back?.zone) {
         setQuery("");
         setTab("zones");
         setZone(back.zone);
+        setZoneMark(back.mark ?? null);
         setReturnZone(false);
         pendingScroll.current = back.scroll ?? 0;
         return;
@@ -382,6 +420,7 @@ export default function App() {
   }
 
   function updateQuery(value: string) {
+    setMissingSong(null);
     setQuery(value);
     setSelectedTitle(null);
     setZone(null);
@@ -393,7 +432,8 @@ export default function App() {
     // 존에서 연 곡만 돌아갈 존을 기록한다 — 아니면 같은 기록 칸에 남은 옛 존으로 잘못 돌아간다.
     // 10-16 «최근 찾기 버튼 눌러 이동했으면 뒤로 가기 눌렀음 로비로 · 존 목록이랑 동일하게» — 검색 쪽도 연 자리(로비 / 입력한 결과)를 기록한다.
     const typed = tab === "search" && !selectedTitle && query.trim() ? query : "";
-    history.replaceState(fromZone ? { zone, scroll: window.scrollY } : { origin: typed ? "results" : "lobby", query: typed }, "", location.href);
+    history.replaceState(fromZone ? { zone, scroll: window.scrollY, mark: zoneMark } : { origin: typed ? "results" : "lobby", query: typed }, "", location.href);
+    setMissingSong(null);
     setReturnZone(true);
     setSongZone(fromZone ? zone : null);
     setSelectedTitle(title);
@@ -422,6 +462,7 @@ export default function App() {
       history.replaceState({ tab: "zones" }, "", location.href);
       history.pushState({ zone: next, scroll: 0 }, "", location.href);
       pendingScroll.current = "first";
+      setZoneMark(null);
       setTab("zones");
       setZone(next);
       return;
@@ -432,10 +473,11 @@ export default function App() {
 
   // 10-16 «버튼 눌리는거 불 안 들어오게 · 버튼 누르면 그 레벨대 곡 목록으로 · 시리즈존 누르면 시리즈 존 가고» —
   // 곡 화면의 위치 단추는 그 존 목록을 연다. 곡 화면은 기록에 남아 뒤로가기로 돌아온다.
-  function openZoneFromSong(next: ZoneSelection) {
+  function openZoneFromSong(next: ZoneSelection, mark: ZoneMark | null = null) {
     history.replaceState({ ...(history.state ?? {}), songScroll: window.scrollY }, "", location.href);
-    history.pushState({ zone: next, scroll: 0 }, "", location.pathname);
-    pendingScroll.current = "first";
+    history.pushState({ zone: next, scroll: 0, mark }, "", location.pathname);
+    pendingScroll.current = mark ? "mark" : "first";
+    setZoneMark(mark);
     setSelectedTitle(null);
     setQuery("");
     setTab("zones");
@@ -459,7 +501,7 @@ export default function App() {
       { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => tourHome() },
       { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
       { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(""); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
-      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 화면 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; } } },
+      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; setZoneMark(null); } } },
       { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => tourHome() },
       { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
       { target: ".recent-strip", title: "⑨ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
@@ -468,6 +510,7 @@ export default function App() {
   }
 
   function goHome() {
+    setMissingSong(null);
     history.pushState(null, "", location.pathname);
     setQuery("");
     setSelectedTitle(null);
@@ -493,7 +536,8 @@ export default function App() {
         {/* 10-16 «5key 생각하면 저거(로고) 눌러서 가는게 맞겠다» — 왼쪽 위 로고를 누르면 첫 화면 */}
         <button className="brand" onClick={goHome} aria-label="첫 화면으로">
           <div className="brand-mark" aria-hidden="true"><span>↖</span><b>P</b><span>↗</span></div>
-          <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}</small></div>
+          {/* 11-14 점검 — 자료 기준일을 화면에(«데이터 연결됨» 은 연결만 말한다) */}
+          <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}{contract.dataDate ? ` · ${contract.dataDate.slice(2).replace(/-/g, ".")} 기준` : ""}</small></div>
         </button>
         {/* 10-16 «존 파인더 우측에 ? 누르면 가이드 · 버튼 어떤 순서대로 누르면 어떻게 동작하는지 하이라이트 느낌으로 순차적으로» */}
         <button className="help-button" onClick={() => { tourHome(); setTourOpen(true); }} aria-label="사용 안내">?</button>
@@ -519,14 +563,15 @@ export default function App() {
         </section>
 
         <section className={tab === "search" && query.trim() && !selectedTitle ? "content searching" : "content"} aria-live="polite">
-          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} onOpenZone={openZoneFromSong} fromZone={songZone} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
-          {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} onChoose={chooseTitle} />}
+          {missingSong && !selectedTitle && !query.trim() && <p className="gone-note" role="status">{(contract.navIndex.gone ?? []).includes(missingSong) ? `«${missingSong}» — PHOENIX 2 기체에서 빠진 곡입니다.` : `«${missingSong}» — 이 이름의 곡을 찾지 못했습니다.`}</p>}
+          {tab === "search" && selectedTitle && <SongDetail contract={contract} title={selectedTitle} filter={filter} reason={unavailable(contract, selectedTitle, creditMode, hearts)} onFullHearts={() => setHearts(MODE_MAX[creditMode])} onPremium={() => { setCreditMode("premium"); setHearts(MODE_MAX.premium); }} onOpenZone={openZoneFromSong} fromZone={songZone} onBack={() => { if (returnZone) { history.back(); return; } setSelectedTitle(null); clearSongFromUrl(); }} />}
+          {tab === "search" && !selectedTitle && query.trim() && <SearchResults query={query} results={results} contract={contract} filter={filter} mode={creditMode} hearts={hearts} onChoose={chooseTitle} />}
           {/* 10-16 «존목록 검색 둘 말고 하나로 합쳐 · 빠른 시작 다 빼고 · 최근 찾기를 맨 밑에» — 첫 화면 = 검색칸 밑에 존 목록, 맨 밑에 최근 찾기 */}
           {!selectedTitle && !query.trim() && (tab === "search" || (tab === "zones" && !zone)) && <>
             <ZoneBrowser contract={contract} filter={filter} zone={null} setZone={openZone} onChoose={chooseTitle} />
             <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />
           </>}
-          {tab === "zones" && zone && <ZoneBrowser contract={contract} filter={filter} zone={zone} setZone={openZone} onChoose={chooseTitle} />}
+          {tab === "zones" && zone && <ZoneBrowser contract={contract} filter={filter} zone={zone} mark={zoneMark} setZone={openZone} onChoose={chooseTitle} />}
           {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
       </main>
@@ -544,7 +589,7 @@ const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: 
     <Icon name="search" />
     <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="곡 이름을 입력하세요" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
     {query && <button onClick={clear} aria-label="검색어 지우기"><Icon name="close" /></button>}
-    <kbd>⌘ K</kbd>
+    <kbd>{IS_MAC ? "⌘ K" : "Ctrl K"}</kbd>
   </form>;
 });
 
@@ -578,8 +623,10 @@ function SearchLanding({ onChoose, recent, onMore }: { onChoose(title: string): 
   </>;
 }
 
-function SearchResults({ query, results, contract, filter, onChoose }: { query: string; results: NavSearchHit[]; contract: PublicContract; filter: FilterKey; onChoose(title: string): void }) {
+function SearchResults({ query, results, contract, filter, mode, hearts, onChoose }: { query: string; results: NavSearchHit[]; contract: PublicContract; filter: FilterKey; mode: CreditMode; hearts: number; onChoose(title: string): void }) {
+  const gone = goneMatches(contract, query);
   return <>
+    {gone.length > 0 && <p className="gone-note" role="status">{gone.slice(0, 3).map((title) => `«${title}»`).join(" · ")}{gone.length > 3 ? ` 외 ${gone.length - 3}곡` : ""} — PHOENIX 2 기체에서 빠진 곡입니다.</p>}
     {results.length === 0 ? <EmptyState title="가까운 곡을 찾지 못했습니다" copy="문장부호를 빼거나 제목의 앞부분만 입력해 보세요." /> :
       <div className="result-list tight">{results.map((result, index) => {
         const locations = locationsFor(contract, result.title, filter);
@@ -588,14 +635,15 @@ function SearchResults({ query, results, contract, filter, onChoose }: { query: 
           <span className="result-index">{String(index + 1).padStart(2, "0")}</span>
           <span className="result-main"><strong>{result.title}</strong><small>{charts.join(" · ") || "전용 채널 곡"}</small></span>
           {/* 10-16 «우측에 숫자 말고 시리즈랑 곡 위치만 · 총 곡수 말고 · 길이가 안 되면 2줄도 돼» */}
-          {(() => { const series = locations.find((item) => item.kind === "series"); return <span className="result-route series">{series ? <><small>{series.label}</small><b>{series.position}</b></> : <small>위치 확인</small>}</span>; })()}
+          {/* 11-14 점검 — 지금 조건에서 못 고르는 곡은 «위치 확인» 대신 까닭(하트 N개부터 · 프리미엄 전용) */}
+          {(() => { const series = locations.find((item) => item.kind === "series"); const why = locations.length ? null : unavailable(contract, result.title, mode, hearts); return <span className="result-route series">{series ? <><small>{series.label}</small><b>{series.position}</b></> : why ? <small className="why">{unavailableShort(why)}</small> : <small>번호 보기</small>}</span>; })()}
           <span className="arrow">→</span>
         </button>;
       })}</div>}
   </>;
 }
 
-function SongDetail({ contract, title, filter, onBack, onOpenZone, fromZone }: { contract: PublicContract; title: string; filter: FilterKey; onBack(): void; onOpenZone(zone: ZoneSelection): void; fromZone: ZoneSelection | null }) {
+function SongDetail({ contract, title, filter, reason, onFullHearts, onPremium, onBack, onOpenZone, fromZone }: { contract: PublicContract; title: string; filter: FilterKey; reason: Unavailable | null; onFullHearts(): void; onPremium(): void; onBack(): void; onOpenZone(zone: ZoneSelection, mark: ZoneMark): void; fromZone: ZoneSelection | null }) {
   const locations = locationsFor(contract, title, filter);
   const basis = fromZone ? locations.find((item) => item.kind === fromZone.kind && item.listKey === fromZone.key) : undefined;
   const neighbors = basis ? neighborTriplet(contract, basis, title, filter) : [];
@@ -627,20 +675,28 @@ function SongDetail({ contract, title, filter, onBack, onOpenZone, fromZone }: {
       {neighbors.length > 0 && <div className="neighbor-strip compact">{neighbors.map((item) => <div key={`${item.position}:${item.title}`} className={item.current ? "current" : ""}><strong>{item.title}</strong></div>)}</div>}
       <div className="route-groups">{routeGroups.map((group) => <div className="route-row" key={group.label}>
         <h3>{group.label}</h3>
-        <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => onOpenZone({ kind: location.kind, key: location.listKey, label: location.label })}>
+        <div className="route-options">{group.items.map((location) => <button key={location.id} onClick={() => onOpenZone({ kind: location.kind, key: location.listKey, label: location.label }, { title, position: location.position })}>
           <strong>{location.kind === "level" ? location.label : location.label.replace(" 채널", "")}</strong>
           <span><b>{location.position}</b>/{location.total}</span>
         </button>)}</div>
       </div>)}</div>
-    </> : <EmptyState
+    </> : reason && "hearts" in reason ? <EmptyState
+      title="이 하트에서는 이용 불가"
+      copy={`하트가 ${reason.hearts}개 이상 남아 있으면 고를 수 있습니다.`}
+      action={{ label: "하트 가득", onClick: onFullHearts }}
+    /> : reason && "premium" in reason ? <EmptyState
+      title="노말 이용 불가"
+      copy="이 곡은 프리미엄 크레딧에서만 고를 수 있습니다."
+      action={{ label: "프리미엄으로 보기", onClick: onPremium }}
+    /> : <EmptyState
       title={filter === "normal" ? "노말 이용 불가" : "이 조건에서는 이용 불가"}
-      copy={filter === "normal" ? "이 곡은 프리미엄 크레딧에서만 고를 수 있습니다." : "현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다."}
+      copy="이 조건에서 고를 수 있는 자리가 없습니다."
     />}
     {/* 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» */}
   </article>;
 }
 
-function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
+function ZoneBrowser({ contract, filter, zone, mark = null, setZone, onChoose }: { contract: PublicContract; filter: FilterKey; zone: ZoneSelection | null; mark?: ZoneMark | null; setZone(value: ZoneSelection | null): void; onChoose(title: string): void }) {
   // 10-16 «싱글 더블 난이도존은 버튼 눌러서 둘중 어떤거 뜰지로 · S1 이런게 그대로 D1로 바뀌면 되니까» — 이 기기에 기억한다.
   const [side, setSide] = useState<"single" | "double">(() => {
     try { return localStorage.getItem("pump-zone-side") === "double" ? "double" : "single"; } catch { return "single"; }
@@ -673,7 +729,7 @@ function ZoneBrowser({ contract, filter, zone, setZone, onChoose }: { contract: 
       {contract.finder.modeRows?.[zone.key] ? <div className="zone-song-list">{rows.map((row) => <div className="zone-row-static" key={`${row.position}:${row.title}`}><b>{row.position}</b><span>{row.title}</span></div>)}<p className="zone-note">곡은 매칭된 상대와 함께 정해져서 목록이 없습니다.</p></div> :
       // 10-16 «무한 스크롤 하니까 오히려 불편하네 · 위아래로 1세트씩 · 1 바로 위에 xx 후 1까지» — 목록을 위·가운데·아래 세 벌만 깔고
       // 가운데 벌 첫 곡에서 시작한다. 위로 올리면 마지막 번호부터 거꾸로, 아래로 내리면 한 바퀴 더 나오고 끝난다.
-      <div className="zone-song-list">{[0, 1, 2].flatMap((copy) => rows.map((row, i) => <button key={`${copy}:${row.position}:${row.title}`} data-first={copy === 1 && i === 0 ? "" : undefined} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>))}</div>}
+      <div className="zone-song-list">{[0, 1, 2].flatMap((copy) => rows.map((row, i) => { const marked = mark !== null && row.title === mark.title && row.position === mark.position; return <button key={`${copy}:${row.position}:${row.title}`} className={marked ? "marked" : undefined} data-first={copy === 1 && i === 0 ? "" : undefined} data-mark={copy === 1 && marked ? "" : undefined} aria-current={marked ? "true" : undefined} onClick={() => onChoose(row.title)}><b>{row.position}</b><span>{row.title}</span></button>; }))}</div>}
     </div>;
   }
   const single = contract.finder.subs["DIFFICULTY ZONE SINGLE"] ?? [];
@@ -741,8 +797,8 @@ function RecentView({ recent, onChoose, onClear }: { recent: string[]; onChoose(
   </>;
 }
 
-function EmptyState({ title, copy }: { title: string; copy: string }) {
-  return <div className="empty-state"><div>↗</div><h3>{title}</h3><p>{copy}</p></div>;
+function EmptyState({ title, copy, action }: { title: string; copy: string; action?: { label: string; onClick(): void } }) {
+  return <div className="empty-state"><div>↗</div><h3>{title}</h3><p>{copy}</p>{action && <button className="empty-action" onClick={action.onClick}>{action.label}</button>}</div>;
 }
 
 function LoadingState() {

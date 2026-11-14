@@ -149,7 +149,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .route-options button { min-width: 74px; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px; color: var(--text); background: var(--bg); cursor: pointer; }
 .route-options button.active { border-color: var(--mint); color: var(--on-mint); background: var(--mint); }
 .route-options strong { font: 700 12px "DM Sans", sans-serif; white-space: nowrap; }
-.route-options span { color: var(--muted); font-size: 9px; white-space: nowrap; }.route-options span b { color: inherit; font-size: 11px; }
+/* 11-14 점검 — 곡 화면의 답(번호/총수)이 제일 작은 글씨(11px·9px)였다 */
+.route-options span { color: var(--muted); font-size: 13px; white-space: nowrap; }.route-options span b { color: var(--text); font: 700 20px "DM Sans", sans-serif; }
 .route-options button.active span { color: #174538; }
 .neighbor-panel { margin-top: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); }
 .neighbor-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; }
@@ -627,3 +628,10 @@ button.brand > div { min-width: max-content; }
 .result-route.series { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; column-gap: 6px; row-gap: 0; max-width: 132px; text-align: right; }
 .result-route.series small { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .result-route.series b { font-size: 22px; line-height: 1.1; }
+
+/* 11-14 점검 — 곡 화면에서 연 존 목록의 그 곡 줄 · 기체에서 빠진 곡 알림 · 못 고르는 까닭 · 빈 화면의 다음 할 일 */
+.zone-song-list button.marked { border-color: var(--mint); background: var(--mint-soft); }
+.zone-song-list button.marked span { color: var(--text); font-weight: 700; }
+.gone-note { margin: 0 0 10px; padding: 11px 13px; border: 1px solid var(--gold); border-radius: 12px; color: var(--text); background: var(--surface); font-size: 13px; }
+.result-route small.why { color: var(--gold); font-weight: 700; font-size: 11px; }
+.empty-action { margin-top: 14px; padding: 10px 16px; border: 0; border-radius: 999px; color: var(--on-mint); background: var(--mint); font-weight: 700; cursor: pointer; }

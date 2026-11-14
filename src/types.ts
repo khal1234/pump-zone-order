@@ -20,7 +20,7 @@ export interface FinderEntry {
 
 export interface NavIndex {
   alias: Record<string, string>;
-  cats: Record<string, Array<{ tile: string; pos: number; total: number; src?: string; seen?: string }>>;
+  cats: Record<string, Array<{ tile: string; pos: number; total: number; src?: string }>>;
   channel: Record<string, { kind: string; pos: number; total: number; fix?: boolean }>;
   chartsOf: Record<string, string[]>;
   levels: Record<string, PositionSet>;
@@ -29,6 +29,7 @@ export interface NavIndex {
   series: Record<string, { zone: string; pos: PositionSet }>;
   seriesTotals: Record<string, PositionSet>;
   categoryMirrors?: Record<string, string>;
+  gone?: string[];
 }
 
 export interface FinderData {
@@ -48,24 +49,15 @@ export interface FinderData {
   tiles: Array<{ name: string; ch: string; locked: boolean }>;
 }
 
-export interface EvidenceRow {
-  title: string;
-  zone: string;
-  position: string;
-  grade: string;
-  source?: string;
-  evidenceId?: string;
-}
-
 export interface PublicContract {
   schemaVersion: number;
   contentHash: string;
   generatedAt: string | null;
+  dataDate?: string;
   game: { name: string; contentThrough: string };
   songs: Array<{ id: string; title: string }>;
   navIndex: NavIndex;
   finder: FinderData;
-  evidence: Record<string, EvidenceRow[]>;
   search: { schemaVersion: number; file: string; sha256: string };
 }
 
