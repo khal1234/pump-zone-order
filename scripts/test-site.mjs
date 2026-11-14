@@ -38,6 +38,8 @@ check("data date is shown", /^\d{4}-\d{2}-\d{2}$/.test(contract.dataDate ?? "") 
 check("songs pulled from the cabinet are named, not silently replaced", (contract.navIndex.gone ?? []).includes("퀸카") && !titles0.has("퀸카") && appSource.includes("기체에서 빠진 곡입니다") && appSource.includes("setMissingSong(title)"));
 check("song-opened zone list marks and centres that song", appSource.includes("data-mark=") && appSource.includes('pendingScroll.current = mark ? "mark" : "first"'));
 check("unavailable songs say why and what to do", appSource.includes("하트 가득") && appSource.includes("unavailableShort(why)") && !appSource.includes("현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다"));
+check("recent list has a back button left of clear and no English label", appSource.includes("← 돌아가기</button>{recent.length > 0 && <button className=\"text-button\" onClick={onClear}>기록 지우기") && !appSource.includes("ON THIS DEVICE"));  // 11-14 주인
+check("normal credit draws only four heart slots", appSource.includes("Array.from({ length: max }") && !appSource.includes("length: MODE_MAX.premium }"));  // 11-14 주인
 check("shortcut label follows the platform", appSource.includes('IS_MAC ? "⌘ K" : "Ctrl K"'));
 // 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» — 근거는 자료에만 남고 곡 화면에는 안 나온다.
 check("song details hide the evidence panel", !appSource.includes("<EvidencePanel") && !appSource.includes("확인 정도"));

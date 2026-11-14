@@ -572,7 +572,7 @@ export default function App() {
             <SearchLanding onChoose={chooseTitle} recent={recent} onMore={() => changeTab("recent")} />
           </>}
           {tab === "zones" && zone && <ZoneBrowser contract={contract} filter={filter} zone={zone} mark={zoneMark} setZone={openZone} onChoose={chooseTitle} />}
-          {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
+          {tab === "recent" && <RecentView recent={recent} onChoose={chooseTitle} onBack={goHome} onClear={() => { setRecent([]); localStorage.removeItem(RECENT_KEY); }} />}
         </section>
       </main>
       {/* 10-16 «관리는 내가 필요한거니 유저가 잘 안보일 수 있게 맨 아래 하단으로» */}
@@ -604,8 +604,8 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
     <div className="heart-control">
       <span className="heart-title">남은 하트</span>
       <div className="heart-buttons" role="group" aria-label={`남은 하트 ${hearts}개`}>
-        {/* 10-16 «노말도 하트 공간 자체는 6개 · 5, 6 눌러도 4개만 차게 · 옆에 /4 는 그대로» — 칸은 늘 6, 채우기는 그 크레딧 최대까지 */}
-        {Array.from({ length: MODE_MAX.premium }, (_, index) => index + 1).map((value) => <button key={value} className={`${value <= hearts ? "filled" : ""}${value > max ? " locked" : ""}`} onClick={() => onHeartsChange(Math.min(value, max))} aria-label={`하트 ${Math.min(value, max)}개로 설정`} aria-pressed={value === hearts}>♥</button>)}
+        {/* 11-14 주인 «노말은 뒤에 하트 2개 없애는게 나을 것 같다 오히려 헷갈리게 만드는거같네» — 칸은 그 크레딧 최대만(노말 4 · 프리미엄 6). 10-16 «칸은 늘 6» 을 바꿈 */}
+        {Array.from({ length: max }, (_, index) => index + 1).map((value) => <button key={value} className={`${value <= hearts ? "filled" : ""}${value > max ? " locked" : ""}`} onClick={() => onHeartsChange(Math.min(value, max))} aria-label={`하트 ${Math.min(value, max)}개로 설정`} aria-pressed={value === hearts}>♥</button>)}
       </div>
       {/* 10-16 «초기화는 말고 그냥 하트 수 누르는게 나을 듯» — 3/6 을 누르면 가득 채운다 */}
       <button className="heart-count" onClick={() => onHeartsChange(max)} aria-label="하트 가득 채우기">{hearts}/{max}</button>
@@ -791,8 +791,9 @@ function ZoneGroup({ title, color, items, choose, wide, hideCount, extra }: { ti
   </section>;
 }
 
-function RecentView({ recent, onChoose, onClear }: { recent: string[]; onChoose(title: string): void; onClear(): void }) {
-  return <><div className="section-heading"><div><span>ON THIS DEVICE</span><h2>최근 찾은 곡</h2></div>{recent.length > 0 && <button className="text-button" onClick={onClear}>기록 지우기</button>}</div>
+// 11-14 주인 «최근 찾기 누르면 뒤로 돌아가는 버튼이 없네 … 기록 지우기 왼쪽에 돌아가는거 두는게 동선상 낫지 않나» — 머리 딱지도 한글로.
+function RecentView({ recent, onChoose, onClear, onBack }: { recent: string[]; onChoose(title: string): void; onClear(): void; onBack(): void }) {
+  return <><div className="section-heading"><div><span>이 기기에만 저장</span><h2>최근 찾은 곡</h2></div><div className="heading-actions"><button className="back-button" onClick={onBack}>← 돌아가기</button>{recent.length > 0 && <button className="text-button" onClick={onClear}>기록 지우기</button>}</div></div>
     {recent.length ? <div className="result-list tight">{recent.map((title, index) => <button className="result-card" key={title} onClick={() => onChoose(title)}><span className="result-index">{String(index + 1).padStart(2, "0")}</span><span className="result-main"><strong>{title}</strong></span></button>)}</div> : <EmptyState title="아직 찾은 곡이 없습니다" copy="검색한 곡을 열면 이 기기에만 최근 기록이 남습니다." />}
   </>;
 }

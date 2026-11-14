@@ -635,3 +635,8 @@ button.brand > div { min-width: max-content; }
 .gone-note { margin: 0 0 10px; padding: 11px 13px; border: 1px solid var(--gold); border-radius: 12px; color: var(--text); background: var(--surface); font-size: 13px; }
 .result-route small.why { color: var(--gold); font-weight: 700; font-size: 11px; }
 .empty-action { margin-top: 14px; padding: 10px 16px; border: 0; border-radius: 999px; color: var(--on-mint); background: var(--mint); font-weight: 700; cursor: pointer; }
+.heading-actions { display: flex; gap: 8px; align-items: center; }   /* 11-14 최근 찾은 곡 — 돌아가기를 기록 지우기 왼쪽에 */
+/* 11-14 주인 «위쪽에 저거 뭐냐 81 저렇게 보이는건 좀 너무 별론데» — PC 너비에서 붙는 머리 바탕이 가운데 칸 폭뿐이라 양옆으로 내려간 목록이 비쳤다.
+   바탕을 화면 폭 전체로 깐다(그림자로 넓히고 clip-path 로 위아래는 자름 — 가로 스크롤 안 생김). */
+.app-shell .hero, .zone-head, .detail-head { box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax); }
+.app-shell .hero { clip-path: inset(0 -100vmax -8px); }   /* 아래 여백 8px 틈도 덮는다 */
