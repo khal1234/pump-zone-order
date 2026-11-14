@@ -129,7 +129,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .result-main { min-width: 0; }
 .result-main strong, .result-main small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .result-main strong { font-size: 14px; }
-.result-main small { margin-top: 5px; color: var(--muted); font-size: 10px; }
+.result-main small { white-space: normal; margin-top: 5px; color: var(--muted); font-size: 10px; }
 .result-route { display: flex; align-items: baseline; gap: 4px; color: var(--muted); }
 .result-route b { color: var(--text); font: 700 22px "DM Sans", sans-serif; }
 .result-route small { font-size: 10px; }
