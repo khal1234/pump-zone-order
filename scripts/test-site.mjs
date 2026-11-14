@@ -33,6 +33,7 @@ const originalAnchorShift = contract.navIndex.cats["러브 이즈 어 데인저 
 check("ORIGINAL inferred positions retain their evidence grade", (originalAnchorShift?.pos ?? 0) > 0 && originalAnchorShift.src === "구간확정");
 // 11-14 점검 — 화면이 안 쓰는 근거 표·판독 작업 메모는 공개 자료에 없고, 기준일·기체에서 빠진 곡 목록은 있다.
 check("public data ships no unused evidence or work memos", !("evidence" in contract) && !Object.values(contract.navIndex.cats).some((rows) => rows.some((row) => "seen" in row)));
+check("public data ships no personal constants or weak marks", !("charts" in contract.navIndex));  // 11-14 점검 E-6
 check("data date is shown", /^\d{4}-\d{2}-\d{2}$/.test(contract.dataDate ?? "") && appSource.includes("contract.dataDate"));
 check("songs pulled from the cabinet are named, not silently replaced", (contract.navIndex.gone ?? []).includes("퀸카") && !titles0.has("퀸카") && appSource.includes("기체에서 빠진 곡입니다") && appSource.includes("setMissingSong(title)"));
 check("song-opened zone list marks and centres that song", appSource.includes("data-mark=") && appSource.includes('pendingScroll.current = mark ? "mark" : "first"'));
