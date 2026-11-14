@@ -40,7 +40,11 @@ check("song-opened zone list marks and centres that song", appSource.includes("d
 check("unavailable songs say why and what to do", appSource.includes("하트 가득") && appSource.includes("unavailableShort(why)") && !appSource.includes("현재 선택한 하트 조건에서는 이 곡을 고를 수 없습니다"));
 check("recent list has a back button left of clear and no English label", appSource.includes("← 돌아가기</button>{recent.length > 0 && <button className=\"text-button\" onClick={onClear}>기록 지우기") && !appSource.includes("ON THIS DEVICE"));  // 11-14 주인
 check("normal credit draws only four heart slots", appSource.includes("Array.from({ length: max }") && !appSource.includes("length: MODE_MAX.premium }"));  // 11-14 주인
-check("shortcut label follows the platform", appSource.includes('IS_MAC ? "⌘ K" : "Ctrl K"'));
+// 11-14 주인 «ctrl K는 왜 있는거지» → «추천대로 해» — 딱지 없음 · PC 는 열자마자 검색 칸 초점 · 아무 데서나 치면 검색 칸으로
+check("no shortcut chip; typing anywhere goes to search", !appSource.includes("<kbd>") && appSource.includes('matchMedia("(hover: hover) and (pointer: fine)")') && appSource.includes("event.key.length === 1") && appSource.includes('event.key === "Process"'));
+// 11-14 주인 «그렇게 해»(물방울 알약) · «추천대로 해»(«?» 한 장 먼저 · 걸음 여섯 · 점 진행)
+check("two-value switches are the drop pill", appSource.includes("function DropToggle") && !appSource.includes('className={`duo '));
+check("help opens a one-page summary before the walk-through", appSource.includes("<HelpSheet") && appSource.includes("화면 따라 보기") && appSource.includes("tour-dots") && !appSource.includes("{index + 1} / {steps.length}"));
 // 10-16 «위치 근거는 유저들한테 중요하지 않아 빼» — 근거는 자료에만 남고 곡 화면에는 안 나온다.
 check("song details hide the evidence panel", !appSource.includes("<EvidencePanel") && !appSource.includes("확인 정도"));
 const s17 = contract.finder.levelSongs.S17;

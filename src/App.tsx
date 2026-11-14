@@ -82,7 +82,6 @@ function goneMatches(contract: PublicContract, query: string): string[] {
   return (contract.navIndex.gone ?? []).filter((title) => squash(title).includes(q));
 }
 
-const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 function levelLabel(channel: string, folds: Record<string, string>): string {
   return Object.values(folds).includes(channel) ? `${channel} OVER` : channel;
@@ -261,6 +260,7 @@ export default function App() {
   // 10-16 «검색으로 들어가면 위치 좌우는 굳이 나올 필요 없어 · 존에서 눌러 들어가면 그 존과 관련시켜 좌우 곡» — 곡을 연 존
   const [songZone, setSongZone] = useState<ZoneSelection | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const pendingScroll = useRef<number | "first" | "mark" | null>(null);
   // 11-14 점검 — 곡 화면에서 연 존 목록은 그 곡 줄을 가운데에 두고 표시한다(존 타일에서 연 목록은 10-16 대로 첫 곡).
   const [zoneMark, setZoneMark] = useState<ZoneMark | null>(null);
@@ -330,14 +330,24 @@ export default function App() {
     }).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "위치 데이터를 불러오지 못했습니다"));
   }, []);
 
+  // 11-14 주인 «ctrl K는 왜 있는거지» → «추천대로 해» — 딱지는 빼고, PC 에선 열자마자 검색 칸에 커서 · 어디서든 글자를 치면 검색 칸으로.
+  //   폰은 자동 초점을 안 준다(10-16 «검색 누르면 키보드 뜨는거 안뜨게»). Ctrl K 는 딱지 없이 남긴다.
+  useEffect(() => {
+    if (contract && matchMedia("(hover: hover) and (pointer: fine)").matches) searchRef.current?.focus({ preventScroll: true });
+  }, [contract]);
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
-      event.preventDefault();
+      const shortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+      const target = event.target as HTMLElement | null;
+      // 한글 입력기는 keydown 의 key 가 «Process» 로 온다 — 그것도 글자 치기로 본다
+      const typing = !event.metaKey && !event.ctrlKey && !event.altKey && ((event.key.length === 1 && event.key !== " ") || event.key === "Process")
+        && !target?.closest?.("input, textarea, select, [contenteditable], .tour, .help-sheet, .feedback-dialog");
+      if (!shortcut && !typing) return;
+      if (shortcut) event.preventDefault();
       setTab("search");
       setSelectedTitle(null);
       setZone(null);
-      requestAnimationFrame(() => searchRef.current?.focus());
+      searchRef.current?.focus({ preventScroll: true });   // 같은 키 입력이 그대로 칸에 들어가도록 기다리지 않고 바로 옮긴다
     }
     window.addEventListener("keydown", focusSearch);
     return () => window.removeEventListener("keydown", focusSearch);
@@ -495,17 +505,15 @@ export default function App() {
     // 10-16 «노스텔지어 예를 들 거면 실제 있는 걸 가지고 하던가 S3을 하지 왜 없는 S4를 하지» — 예시 곡의 실제 첫 존 이름을 쓴다
     // 같은 사용자 «그리고 S3(S4)만 가리켜» — ⑤ 는 상자 전체가 아니라 그 단추 하나만 밝힌다(첫 단추 = 예시 곡의 첫 싱글 존).
     const exampleZone = songZone()?.label ?? "S3";
+    // 11-14 주인 «추천대로 해»(점검 세션 시안 B) — 걸음은 여섯(첫 화면 넷 + 곡 화면 둘), 글은 두 줄 안.
+    //   최근 찾기 걸음을 빼서, 기록이 없는 폰에서 «8 / 10» 다음 «10 / 10» 으로 건너뛰던 것도 없어진다.
     return [
-      { target: ".mode-control", title: "① 크레딧 종류", body: "누를 때마다 노말 ↔ 프리미엄이 바뀝니다. 프리미엄에서만 나오는 곡까지 번호가 맞춰집니다.", do: () => tourHome() },
-      { target: ".heart-buttons", title: "② 남은 하트", body: "지금 남은 하트를 누르세요. 하트가 줄면 풀송·리믹스가 빠져 기기 번호가 달라지는 것까지 맞춰 보여 드립니다. 오른쪽 숫자를 누르면 가득 찹니다." },
-      { target: ".search-box", title: "③ 곡 검색", body: "곡 이름을 칩니다. (예: 노스텔지어)", do: () => tourHome() },
-      { target: ".content.searching button", title: "④ 검색 결과", body: "결과에서 곡을 누르면 그 곡이 있는 모든 존이 나옵니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
-      { target: ".route-options button", title: "⑤ 곡이 있는 자리", body: `싱글·더블 난이도존, 시리즈존, 카테고리별 기기 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(""); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
-      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "⑥ 존 목록", body: "기기 번호 그대로 곡 순서가 나옵니다. 위로 올리면 마지막 번호부터 이어집니다. 뒤로가기나 「존 목록」으로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; setZoneMark(null); } } },
-      { target: ".side-toggle", title: "⑦ 싱글 / 더블", body: "첫 화면의 난이도존 목록을 싱글과 더블 사이에서 바꿉니다.", do: () => tourHome() },
-      { target: ".zone-grid", title: "⑧ 존 바로 고르기", body: "곡을 몰라도 존을 바로 눌러 순서를 볼 수 있습니다." },
-      { target: ".recent-strip", title: "⑨ 최근 찾기", body: "최근에 본 곡이 여기 남습니다. 누르면 바로 그 곡으로 갑니다." },
-      { target: "button.brand", title: "⑩ 처음으로", body: "어디서든 왼쪽 위 로고를 누르면 이 첫 화면으로 돌아옵니다." },
+      { target: ".credit-control", title: "크레딧 · 하트", body: "노말/프리미엄과 남은 하트를 맞춥니다. 하트가 줄어 빠지는 곡까지 번호에 넣습니다.", do: () => tourHome() },
+      { target: ".content.searching button", title: "곡 검색", body: "곡 이름을 치고, 결과에서 곡을 누릅니다.", do: () => { setSelectedTitle(null); setTab("search"); setQuery(TOUR_SONG); } },
+      { target: ".route-options button", title: "곡이 있는 자리", body: `존마다 기체 번호입니다. ${exampleZone} 같은 단추를 누르면 그 존 목록으로 갑니다.`, do: () => { setZone(null); setTab("search"); setQuery(""); setSelectedTitle(TOUR_SONG); } },  // 최근 찾기에 남기지 않게 chooseTitle 을 안 쓴다
+      { target: () => { const rows = [...document.querySelectorAll(".zone-song-list button")].filter((row) => row.querySelector("span")?.textContent === TOUR_SONG); return rows[Math.floor(rows.length / 2)] ?? null; }, title: "존 목록", body: "기체 화면 번호 그대로입니다. 뒤로가기로 돌아갑니다.", do: () => { const z = songZone(); if (z) { setSelectedTitle(TOUR_SONG); openZoneFromSong(z); pendingScroll.current = null; setZoneMark(null); } } },
+      { target: ".side-toggle", title: "존 바로 고르기", body: "곡을 몰라도 존을 눌러 순서를 봅니다. 싱글/더블은 이 단추로 바꿉니다.", do: () => tourHome() },
+      { target: "button.brand", title: "처음으로", body: "어디서든 왼쪽 위 로고를 누르면 첫 화면입니다." },
     ];
   }
 
@@ -540,7 +548,8 @@ export default function App() {
           <div><strong>ZONE FINDER</strong><small>{contract.game.contentThrough}{contract.dataDate ? ` · ${contract.dataDate.slice(2).replace(/-/g, ".")} 기준` : ""}</small></div>
         </button>
         {/* 10-16 «존 파인더 우측에 ? 누르면 가이드 · 버튼 어떤 순서대로 누르면 어떻게 동작하는지 하이라이트 느낌으로 순차적으로» */}
-        <button className="help-button" onClick={() => { tourHome(); setTourOpen(true); }} aria-label="사용 안내">?</button>
+        {/* 11-14 주인 «? 눌렀을 때 설명이라던가» → «추천대로 해» — 먼저 세 줄 한 장, 더 볼 사람만 «화면 따라 보기» */}
+        <button className="help-button" onClick={() => setHelpOpen(true)} aria-label="사용 안내">?</button>
         <div className="top-actions">
           <div className={`sync-pill ${loadState === "cached" ? "cached" : ""}`}>
             <span></span>{loadState === "cached" ? "오프라인 저장본" : "데이터 연결됨"}
@@ -553,6 +562,7 @@ export default function App() {
         </div>
       </header>
 
+      {helpOpen && <HelpSheet onTour={() => { setHelpOpen(false); tourHome(); setTourOpen(true); }} onClose={() => setHelpOpen(false)} />}
       {tourOpen && <Tour steps={tourSteps()} onClose={() => { setTourOpen(false); goHome(); }} />}
       {loadState === "cached" && <div className="offline-banner">네트워크에 연결되지 않아 마지막으로 검증한 저장 데이터를 보여 드립니다.</div>}
 
@@ -589,9 +599,18 @@ const SearchBox = forwardRef<HTMLInputElement, { query: string; setQuery(value: 
     <Icon name="search" />
     <input ref={ref} type="search" name="song-search" inputMode="search" enterKeyHint="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="곡 이름을 입력하세요" aria-label="곡 이름 검색" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} data-1p-ignore data-lpignore="true" />
     {query && <button onClick={clear} aria-label="검색어 지우기"><Icon name="close" /></button>}
-    <kbd>{IS_MAC ? "⌘ K" : "Ctrl K"}</kbd>
   </form>;
 });
+
+// 두 값 중 하나를 고르는 단추(노말/프리미엄 · 싱글/더블).
+//   11-14 주인 «근데 물결말고 더 이쁜거 있으면 그렇게 해» → 점검 세션 시안 «물방울 알약» → 주인 «그렇게 해».
+//   두 칸이 나란히, 고른 칸 밑에 민트 알약이 깔리고 바꾸면 미끄러지며 살짝 눌렸다 펴진다. 어디를 눌러도 반대쪽으로 바뀐다(10-16 «버튼은 1개로만»).
+function DropToggle({ labels, second, onToggle, ariaLabel, small }: { labels: [string, string]; second: boolean; onToggle(): void; ariaLabel?: string; small?: boolean }) {
+  const [moved, setMoved] = useState(false);   // 처음 그릴 때는 눌림 효과를 안 낸다
+  return <button className={`drop${small ? " sm" : ""}${moved ? " go" : ""}`} data-on={second ? "1" : "0"} onClick={() => { setMoved(true); onToggle(); }} aria-label={ariaLabel}>
+    <i aria-hidden="true"></i><span>{labels[0]}</span><span>{labels[1]}</span>
+  </button>;
+}
 
 function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: { mode: CreditMode; hearts: number; filter: FilterKey; onModeChange(value: CreditMode): void; onHeartsChange(value: number): void }) {
   const max = MODE_MAX[mode];
@@ -599,7 +618,7 @@ function CreditControl({ mode, hearts, filter, onModeChange, onHeartsChange }: {
     {/* 10-16 «노말/프리미엄 하나로 버튼 합치고 토글형으로 한번 누르면 다른 한쪽만 불 들어오게» */}
     <div className="mode-control single" aria-label="크레딧 종류">
       {/* 10-16 «노말/프리미엄 둘 다 하되 누른쪽만 불 들어오게 · 버튼은 1개로만» — 한 버튼 안에 두 칸, 누르면 반대쪽에 불 */}
-      <button className={`duo ${mode === "normal" ? "first" : "second"}`} onClick={() => onModeChange(mode === "normal" ? "premium" : "normal")} aria-label={`지금 ${mode === "normal" ? "노말" : "프리미엄"} — 눌러서 바꾸기`}><span className={mode === "normal" ? "on" : ""}>노말</span><span className={mode === "premium" ? "on" : ""}>프리미엄</span></button>
+      <DropToggle labels={["노말", "프리미엄"]} second={mode === "premium"} onToggle={() => onModeChange(mode === "normal" ? "premium" : "normal")} ariaLabel={`지금 ${mode === "normal" ? "노말" : "프리미엄"} — 눌러서 바꾸기`} />
     </div>
     <div className="heart-control">
       <span className="heart-title">남은 하트</span>
@@ -761,7 +780,7 @@ function ZoneBrowser({ contract, filter, zone, mark = null, setZone, onChoose }:
   };
   const shown: ZoneGroupKey[] = [side, "series", "category"];   // 10-16 사용자 «위의 버튼 3개 없애고 그냥 하나로» — 탭 없이 한 화면에 차례로
   // 10-16 «싱글/더블로 여기도 토글형으로» — 버튼 하나, 누르면 다른 쪽
-  const sideToggle = <div className="side-toggle"><button className={`duo ${side === "single" ? "first" : "second"}`} onClick={() => pickSide(side === "single" ? "double" : "single")}><span className={side === "single" ? "on" : ""}>싱글</span><span className={side === "double" ? "on" : ""}>더블</span></button></div>;
+  const sideToggle = <div className="side-toggle"><DropToggle small labels={["싱글", "더블"]} second={side === "double"} onToggle={() => pickSide(side === "single" ? "double" : "single")} ariaLabel={`지금 ${side === "single" ? "싱글" : "더블"} — 눌러서 바꾸기`} /></div>;
   return <>
     {shown.map((key) => <ZoneGroup key={key} title={key === side ? "난이도존" : groups[key].title} color={groups[key].color} items={groups[key].items} choose={groups[key].choose} wide={key === "series" || key === "category"} hideCount extra={key === side ? sideToggle : undefined} />)}
   </>;
@@ -786,7 +805,7 @@ function zoneRows(contract: PublicContract, zone: ZoneSelection, filter: FilterK
 }
 
 function ZoneGroup({ title, color, items, choose, wide, hideCount, extra }: { title: string; color: string; items: Array<{ key: string; count: number; countLabel?: string; label?: string }>; choose(key: string): void; wide?: boolean; hideCount?: boolean; extra?: React.ReactNode }) {
-  return <section className="zone-group"><div className="zone-group-title"><span className={color}></span><h3>{title}</h3>{extra}{!hideCount && <small>{items.length}개</small>}</div>
+  return <section className="zone-group" data-tone={color}><div className="zone-group-title"><span className={color}></span><h3>{title}</h3>{extra}{!hideCount && <small>{items.length}개</small>}</div>
     <div className={wide ? "zone-grid wide" : "zone-grid names"}>{items.map((item) => <button key={item.key} className={!wide && (item.label ?? item.key).length > 4 ? "span2" : undefined} onClick={() => choose(item.key)}><strong>{item.label ?? item.key}</strong>{!hideCount && <span>{item.countLabel ?? `${item.count}곡`}</span>}</button>)}</div>
   </section>;
 }
@@ -814,6 +833,26 @@ function FatalState({ message }: { message: string }) {
 //   10-16 «검색 후에 곡 누르는 거랑 곡 눌러서 S4 누르면 이동되는 거까지도» — 단계마다 할 일(do)을 먼저 하고, 그린 뒤 목표를 찾는다.
 //   목표가 없으면(예: 최근 찾기가 빈 사람) 그 단계는 건너뛴다.
 type TourStep = { target: string | (() => Element | null); title: string; body: string; do?: () => void };
+
+// «?» 를 누르면 먼저 뜨는 한 장 — 이 사이트가 무엇을 하는지 세 줄(11-14 점검 세션 시안 A · 주인 «추천대로 해»)
+function HelpSheet({ onTour, onClose }: { onTour(): void; onClose(): void }) {
+  useEffect(() => {
+    const esc = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onClose]);
+  return <div className="help-backdrop" onClick={onClose}>
+    <div className="help-sheet" role="dialog" aria-modal="true" aria-label="존 파인더 설명" onClick={(event) => event.stopPropagation()}>
+      <h2>오락실 선곡 화면에서<br />이 곡이 <em>몇 번째</em>인지 알려 줍니다</h2>
+      <ol>
+        <li><i>1</i><span>지금 크레딧(노말·프리미엄)과 남은 하트를 맞춥니다</span></li>
+        <li><i>2</i><span>곡 이름을 칩니다</span></li>
+        <li><i>3</i><span>나온 번호만큼 기체에서 넘깁니다 — <b>S12 29/113</b> 이면 S12 존의 29번째</span></li>
+      </ol>
+      <div className="help-actions"><button onClick={onTour}>화면 따라 보기</button><button className="primary" onClick={onClose} autoFocus>알겠어요</button></div>
+    </div>
+  </div>;
+}
 
 function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
   // 10-16 «닫았다 여는 그거 자체를 못 없애? 왜 의도적으로 틈을 만드는지 · 이동된 걸로 화면 확 바뀌어도 되잖아» —
@@ -850,16 +889,21 @@ function Tour({ steps, onClose }: { steps: TourStep[]; onClose(): void }) {
   if (!step || !rect) return null;
   const last = index === steps.length - 1;
   const pad = 6;
+  // 카드 높이 ≈ 150px(제목 + 두 줄 + 단추) — 밑에 그만큼 + 여유가 있으면 밑에, 아니면 위에(아래 끝을 대상 위에 맞춘다)
   const below = rect.bottom + 190 < window.innerHeight;
+  // 11-14 시안 B — 꼬리가 가리키는 곳을 찌른다: 카드를 대상 가운데 쪽으로 끌어오고, 꼬리는 대상 가운데 x 에 둔다
+  const cardW = Math.min(420, window.innerWidth - 32);
+  const centre = rect.left + rect.width / 2;
+  const left = Math.min(Math.max(16, centre - cardW / 2), window.innerWidth - 16 - cardW);
+  const tailX = Math.min(Math.max(22, centre - left), cardW - 22);
   return <div className="tour" role="dialog" aria-label="사용 안내">
     <div className="tour-spot" style={{ left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2 }} />
-    <div className="tour-card" style={below ? { top: rect.bottom + pad + 10 } : { top: Math.max(8, rect.top - pad - 10 - 170) }}>
-      <small>{index + 1} / {steps.length}</small>
+    <div className={`tour-card ${below ? "tail-up" : "tail-down"}`} style={{ left, width: cardW, ...(below ? { top: rect.bottom + pad + 12 } : { bottom: window.innerHeight - (rect.top - pad - 12) }), ["--tail-x" as string]: `${tailX}px` }}>
       <b>{step.title}</b>
       <p>{step.body}</p>
       <div className="tour-actions">
-        <button onClick={onClose}>닫기</button>
-        {index > 0 && <button onClick={() => go(index - 1, -1)}>이전</button>}
+        <div className="tour-dots" aria-label={`${index + 1}번째 / 모두 ${steps.length}`}>{steps.map((_, i) => <i key={i} className={i === index ? "on" : ""} />)}</div>
+        <button className="link" onClick={onClose}>닫기</button>
         <button className="primary" onClick={() => (last ? onClose() : go(index + 1, 1))}>{last ? "끝" : "다음"}</button>
       </div>
     </div>

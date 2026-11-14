@@ -17,8 +17,6 @@
   --shadow: 0 24px 70px rgba(0, 0, 0, .28);
   --on-mint: #082019;
   --well: rgba(5, 12, 13, .18);
-  --duo-fill: var(--mint);
-  --duo-on: #082019;
   --heart-off: color-mix(in srgb, var(--muted) 35%, transparent);
 }
 
@@ -40,8 +38,6 @@
   /* 밝은 판: 진한 초록 위 어두운 글자가 안 읽히고(#082019 on #087d61), 어두운 판용 칸 바탕이 회색 덩어리로 보였다(10-16 사용자) */
   --on-mint: #ffffff;
   --well: var(--surface-2);
-  --duo-fill: color-mix(in srgb, var(--mint) 16%, #ffffff);
-  --duo-on: var(--mint);
   --heart-off: color-mix(in srgb, var(--muted) 55%, #ffffff);
 }
 
@@ -92,7 +88,6 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
 .search-box input::placeholder { color: color-mix(in srgb, var(--muted) 72%, transparent); }
 .search-box button { display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 9px; color: var(--muted); background: var(--surface); cursor: pointer; }
 .search-box button svg { width: 17px; }
-.search-box kbd { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface); font: 600 10px "DM Sans", sans-serif; box-shadow: 0 2px 0 var(--line); }
 .credit-control { margin: 15px auto 0; width: min(100%, 520px); display: grid; grid-template-columns: auto 1fr; gap: 8px; text-align: left; }
 .mode-control { display: grid; grid-template-columns: repeat(2, 1fr); padding: 4px; gap: 3px; border: 1px solid var(--line); border-radius: 14px; background: var(--well); }
 .mode-control button { min-width: 86px; padding: 8px 11px; border: 0; border-radius: 10px; color: var(--muted); background: transparent; cursor: pointer; }
@@ -261,7 +256,6 @@ main { max-width: 1100px; margin: 0 auto; padding: 52px 28px 20px; }
   .hero-copy { margin: 16px 0 24px; font-size: 13px; line-height: 1.65; }
   .search-box { height: 61px; border-radius: 17px; }
   .search-box input { font-size: 15px; }
-  .search-box kbd { display: none; }
   .credit-control { grid-template-columns: 1fr; }
   .mode-control button { min-width: 0; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: 7px; }
@@ -530,71 +524,13 @@ body { min-height: 100svh; }
 button.heart-count { border: 0; background: transparent; padding: 6px 4px; cursor: pointer; }
 /* 10-16 «시리즈존 위랑 카테고리 위에 여백 약간만 늘려봐» (8 → 14px) */
 .zone-group + .zone-group { margin-top: 14px; }
-/* 두 칸 한 버튼 — 고른 칸만 불 */
-button.duo { display: inline-flex; align-items: stretch; gap: 3px; padding: 3px; border: 0; border-radius: 11px; background: transparent; cursor: pointer; }
-button.duo span { display: flex; align-items: center; justify-content: center; padding: 0 12px; min-height: 36px; border-radius: 9px; color: var(--muted); font-weight: 700; font-size: 13px; }
-button.duo span.on { background: var(--mint); color: var(--on-mint); }
-.mode-control.single { padding: 0; }
-.mode-control.single button.duo { width: 100%; min-height: 44px; }
-.mode-control.single button.duo span { flex: 1; }
-.side-toggle { padding: 0; }
-.side-toggle button.duo span { min-height: 30px; }
-button.duo span { white-space: nowrap; padding: 0 10px; }
-.mode-control.single button.duo { min-width: 0; }
-.heart-buttons button.locked { opacity: .35; }
-/* 10-16 «노말을 약간 위로 프리미엄을 약간 아래로 사선으로 · 싱글 더블도 · 둘이 스위칭이다 라는거 인식하기 좋게» */
-button.duo { padding: 7px 3px; gap: 2px; }
-button.duo span { min-height: 30px; }
-button.duo span:first-child { transform: translateY(-5px); }
-button.duo span:last-child { transform: translateY(5px); }
-.side-toggle button.duo span { min-height: 26px; }
-/* 10-16 «네모로 칸을 만들지 말고 사선 형태로 칸이 차게» — 버튼을 사선으로 나눠 고른 쪽 조각만 칠한다 */
-button.duo { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; isolation: isolate; }
-button.duo::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--duo-fill); transition: clip-path .18s ease; }
-button.duo.first::before { clip-path: polygon(0 0, 60% 0, 40% 100%, 0 100%); }
-button.duo.second::before { clip-path: polygon(60% 0, 100% 0, 100% 100%, 40% 100%); }
-button.duo span, button.duo span.on { background: transparent; border-radius: 0; flex: 1; }
-button.duo span.on { color: var(--duo-on); }
-.mode-control.single { border: 0; background: transparent; }
-/* 두 칸 폭을 같게(긴 쪽 글자 폭 기준) — 사선이 정확히 가운데를 가르도록 */
-button.duo { display: inline-grid; grid-template-columns: 1fr 1fr; }
-button.duo span { min-width: max-content; padding: 0 12px; }
-.mode-control.single button.duo { display: grid; }
-/* 10-16 «노말 좀 더 위로 · 프리미엄 좀 더 아래로 · 사선은 1·3사분면 꼭짓점 다 닿게 · 글자 좀 더 키워» —
-   사선 = 오른쪽 위 꼭짓점 ↔ 왼쪽 아래 꼭짓점. 고른 쪽 삼각형만 칠한다. */
-button.duo.first::before { clip-path: polygon(0 0, 100% 0, 0 100%); }
-button.duo.second::before { clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-button.duo span:first-child { transform: translateY(-9px); justify-content: flex-start; }
-button.duo span:last-child { transform: translateY(9px); justify-content: flex-end; }
-.mode-control.single button.duo { min-height: 56px; }
-.mode-control.single button.duo span { font-size: 15px; }
-.side-toggle button.duo { min-height: 42px; }
-.side-toggle button.duo span:first-child { transform: translateY(-6px); }
-.side-toggle button.duo span:last-child { transform: translateY(6px); }
+/* 두 칸 한 버튼(노말/프리미엄 · 싱글/더블) — 10-16 사선·물결 꼴은 11-14 «물방울 알약»으로 바뀌었다(아래 11-14 절) */
 /* 10-16 «사선 말고 물결로 차게 해 · 선으로 닿으니까 그닥 안 이뻐» — 오른쪽 위 꼭짓점 → 왼쪽 아래 꼭짓점을 S자 곡선으로 가른다 */
-button.duo.first::before, button.duo.second::before { clip-path: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
-button.duo.first::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 C40 15 60 85 0 100 Z' fill='black'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 C40 15 60 85 0 100 Z' fill='black'/></svg>");
-}
-button.duo.second::before {
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 C40 15 60 85 0 100 H100 Z' fill='black'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 C40 15 60 85 0 100 H100 Z' fill='black'/></svg>");
-}
-
-/* 10-16 «물결은 파도 수 좀 더 많게 · 노말 프리미엄 글자 벽으로 붙여 · 각각 2·4사분면에 근접하게» —
-   경계 = 오른쪽 위 → 왼쪽 아래 대각선에 물결 3번(양 끝 꼭짓점은 그대로 닿게). 글자는 노말 왼쪽 위 · 프리미엄 오른쪽 아래 구석. */
-button.duo.first::before { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 L98.4 1.7 L97.0 3.6 L95.6 5.6 L94.3 7.6 L92.9 9.6 L91.5 11.5 L89.8 13.1 L87.9 14.5 L85.7 15.7 L83.3 16.7 L80.8 17.5 L78.3 18.3 L75.8 19.1 L73.5 20.2 L71.5 21.5 L69.8 23.2 L68.6 25.2 L67.6 27.6 L67.1 30.4 L66.7 33.3 L66.4 36.4 L66.0 39.3 L65.4 42.1 L64.5 44.5 L63.1 46.4 L61.3 47.9 L59.0 49.0 L56.2 49.6 L53.2 49.9 L50.0 50.0 L46.8 50.1 L43.8 50.4 L41.0 51.0 L38.7 52.1 L36.9 53.6 L35.5 55.5 L34.6 57.9 L34.0 60.7 L33.6 63.6 L33.3 66.7 L32.9 69.6 L32.4 72.4 L31.4 74.8 L30.2 76.8 L28.5 78.5 L26.5 79.8 L24.2 80.9 L21.7 81.7 L19.2 82.5 L16.7 83.3 L14.3 84.3 L12.1 85.5 L10.2 86.9 L8.5 88.5 L7.1 90.4 L5.7 92.4 L4.4 94.4 L3.0 96.4 L1.6 98.3 L-0.0 100.0 Z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 0 H100 L98.4 1.7 L97.0 3.6 L95.6 5.6 L94.3 7.6 L92.9 9.6 L91.5 11.5 L89.8 13.1 L87.9 14.5 L85.7 15.7 L83.3 16.7 L80.8 17.5 L78.3 18.3 L75.8 19.1 L73.5 20.2 L71.5 21.5 L69.8 23.2 L68.6 25.2 L67.6 27.6 L67.1 30.4 L66.7 33.3 L66.4 36.4 L66.0 39.3 L65.4 42.1 L64.5 44.5 L63.1 46.4 L61.3 47.9 L59.0 49.0 L56.2 49.6 L53.2 49.9 L50.0 50.0 L46.8 50.1 L43.8 50.4 L41.0 51.0 L38.7 52.1 L36.9 53.6 L35.5 55.5 L34.6 57.9 L34.0 60.7 L33.6 63.6 L33.3 66.7 L32.9 69.6 L32.4 72.4 L31.4 74.8 L30.2 76.8 L28.5 78.5 L26.5 79.8 L24.2 80.9 L21.7 81.7 L19.2 82.5 L16.7 83.3 L14.3 84.3 L12.1 85.5 L10.2 86.9 L8.5 88.5 L7.1 90.4 L5.7 92.4 L4.4 94.4 L3.0 96.4 L1.6 98.3 L-0.0 100.0 Z' fill='black'/></svg>"); }
-button.duo.second::before { -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 L98.4 1.7 L97.0 3.6 L95.6 5.6 L94.3 7.6 L92.9 9.6 L91.5 11.5 L89.8 13.1 L87.9 14.5 L85.7 15.7 L83.3 16.7 L80.8 17.5 L78.3 18.3 L75.8 19.1 L73.5 20.2 L71.5 21.5 L69.8 23.2 L68.6 25.2 L67.6 27.6 L67.1 30.4 L66.7 33.3 L66.4 36.4 L66.0 39.3 L65.4 42.1 L64.5 44.5 L63.1 46.4 L61.3 47.9 L59.0 49.0 L56.2 49.6 L53.2 49.9 L50.0 50.0 L46.8 50.1 L43.8 50.4 L41.0 51.0 L38.7 52.1 L36.9 53.6 L35.5 55.5 L34.6 57.9 L34.0 60.7 L33.6 63.6 L33.3 66.7 L32.9 69.6 L32.4 72.4 L31.4 74.8 L30.2 76.8 L28.5 78.5 L26.5 79.8 L24.2 80.9 L21.7 81.7 L19.2 82.5 L16.7 83.3 L14.3 84.3 L12.1 85.5 L10.2 86.9 L8.5 88.5 L7.1 90.4 L5.7 92.4 L4.4 94.4 L3.0 96.4 L1.6 98.3 L-0.0 100.0 H100 Z' fill='black'/></svg>"); mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M100 0 L98.4 1.7 L97.0 3.6 L95.6 5.6 L94.3 7.6 L92.9 9.6 L91.5 11.5 L89.8 13.1 L87.9 14.5 L85.7 15.7 L83.3 16.7 L80.8 17.5 L78.3 18.3 L75.8 19.1 L73.5 20.2 L71.5 21.5 L69.8 23.2 L68.6 25.2 L67.6 27.6 L67.1 30.4 L66.7 33.3 L66.4 36.4 L66.0 39.3 L65.4 42.1 L64.5 44.5 L63.1 46.4 L61.3 47.9 L59.0 49.0 L56.2 49.6 L53.2 49.9 L50.0 50.0 L46.8 50.1 L43.8 50.4 L41.0 51.0 L38.7 52.1 L36.9 53.6 L35.5 55.5 L34.6 57.9 L34.0 60.7 L33.6 63.6 L33.3 66.7 L32.9 69.6 L32.4 72.4 L31.4 74.8 L30.2 76.8 L28.5 78.5 L26.5 79.8 L24.2 80.9 L21.7 81.7 L19.2 82.5 L16.7 83.3 L14.3 84.3 L12.1 85.5 L10.2 86.9 L8.5 88.5 L7.1 90.4 L5.7 92.4 L4.4 94.4 L3.0 96.4 L1.6 98.3 L-0.0 100.0 H100 Z' fill='black'/></svg>"); }
-button.duo span:first-child, button.duo span:last-child { position: absolute; transform: none; min-height: 0; padding: 0; }
-button.duo span:first-child { top: 5px; left: 9px; }
-button.duo span:last-child { bottom: 5px; right: 9px; }
-.mode-control.single button.duo { min-height: 56px; min-width: 150px; }
-.side-toggle button.duo { min-height: 40px; min-width: 104px; }
-.side-toggle button.duo span:first-child { top: 3px; left: 8px; }
-.side-toggle button.duo span:last-child { bottom: 3px; right: 8px; }
-.side-toggle button.duo span:first-child, .side-toggle button.duo span:last-child { transform: none; }
-.side-toggle button.duo { min-height: 44px; }
+/* 10-16 «물결은 파도 수 좀 더 많게 · 노말 프리미엄 글자 벽으로 붙여 · 각각 2·4사분면에 근접하게» */
+/*   ↑ 11-14 주인 «근데 물결말고 더 이쁜거 있으면 그렇게 해» → 시안 «물방울 알약» → «그렇게 해» 로 덮임 */
+.mode-control.single { padding: 0; border: 0; background: transparent; }
+.side-toggle { padding: 0; }
+.heart-buttons button.locked { opacity: .35; }
 /* 10-16 하단 메뉴 없앰(검색·존 목록 한 화면) · 곡 화면 머리 = [결과로 … 공유] 줄 밑에 곡 이름 · 여백 최소 */
 .app-shell, .app-shell.zone-open { padding-bottom: 12px; }
 .detail-head { display: block; padding: 2px 0 4px; }
@@ -640,3 +576,84 @@ button.brand > div { min-width: max-content; }
    바탕을 화면 폭 전체로 깐다(그림자로 넓히고 clip-path 로 위아래는 자름 — 가로 스크롤 안 생김). */
 .app-shell .hero, .zone-head, .detail-head { box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax); }
 .app-shell .hero { clip-path: inset(0 -100vmax -8px); }   /* 아래 여백 8px 틈도 덮는다 */
+
+/* ───── 11-14 주인 디자인 판정 «추천대로 해» · «그렇게 해» (점검 세션 시안 _modding/rise_mod/livecheck_20261113/시안/존파인더_디자인_시안.html · 존파인더_단추_시안2.html) ─────
+   물음 원문: «저거 물결이라던가 이거 자체 앱 배경색이라던가 디자인적으로 더 개선할 방향은 없나» · «? 눌렀을 때 설명이라던가» */
+:root {
+  --page-bg: radial-gradient(120% 55% at 50% -8%, rgba(113, 246, 200, .16), transparent 60%), linear-gradient(#0a1c1e, #050d0e);
+  --tile: #13292b;
+  --tile-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 1px 2px rgba(0, 0, 0, .28);
+  --drop-well: #0b1a1b;
+  --drop-well-shadow: inset 0 1px 3px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(202, 236, 222, .08);
+  --drop-pill: linear-gradient(160deg, #9bfde0, #45d3ab);
+  --drop-glow: 0 4px 14px rgba(113, 246, 200, .35), inset 0 1px 0 rgba(255, 255, 255, .55);
+  --drop-on: #062a20;
+  --drop-off: #a9bdb7;
+}
+:root[data-theme="light"] {
+  /* 밝은 판은 같은 뜻으로 — 위에서 옅은 민트 빛 · 단추 면은 흰색으로 한 단 띄움 · 꺼진 글자도 또렷하게 */
+  --page-bg: radial-gradient(120% 55% at 50% -8%, rgba(8, 125, 97, .10), transparent 60%), linear-gradient(#f3f8f5, #e3ebe6);
+  --tile: #ffffff;
+  --tile-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(20, 55, 48, .13);
+  --drop-well: color-mix(in srgb, var(--mint) 7%, #e4ece7);
+  --drop-well-shadow: inset 0 1px 3px rgba(20, 55, 48, .18), inset 0 0 0 1px rgba(20, 55, 48, .08);
+  --drop-pill: linear-gradient(160deg, #2fb58e, #087d61);
+  --drop-glow: 0 4px 12px rgba(8, 125, 97, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+  --drop-on: #ffffff;
+  --drop-off: #4f6862;
+}
+/* 바탕: 위에서 민트 빛이 옅게 번지는 세로 그라데이션(시안 2 · A) — 화면에 고정된 한 장 */
+/* body 바탕이 칠해져 있으면 그 밑(z-index -1)의 고정 바탕이 안 보인다 — 칠은 :root 가 하고 body 는 비운다 */
+body { background: transparent; }
+body::before { background: var(--page-bg); background-size: auto; }
+/* 붙는 머리는 같은 고정 바탕을 제 띠 높이만큼 잘라 깐다 — 불투명하면서 바탕 빛과 이음매가 없다(clip-path 가 띠 밖을 자름) */
+.app-shell .hero, .zone-head, .detail-head { background: transparent; box-shadow: none; }
+.app-shell .hero::before, .zone-head::before, .detail-head::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--page-bg), var(--bg); pointer-events: none; }
+
+/* 단추 면을 한 단 밝게 · 선 대신 옅은 안쪽 빛 + 그림자 · 묶음 색 9%(난이도 = 민트/코랄 · 시리즈 = 금 · 카테고리 = 파랑) — 시안 2 · B */
+.zone-grid button, .zone-song-list button, .heart-control { border-color: transparent; background: var(--tile); box-shadow: var(--tile-shadow); }
+.zone-group[data-tone="mint"] .zone-grid button { background: color-mix(in srgb, var(--mint) 9%, var(--tile)); }
+.zone-group[data-tone="coral"] .zone-grid button { background: color-mix(in srgb, var(--coral) 9%, var(--tile)); }
+.zone-group[data-tone="gold"] .zone-grid button { background: color-mix(in srgb, var(--gold) 9%, var(--tile)); }
+.zone-group[data-tone="blue"] .zone-grid button { background: color-mix(in srgb, var(--blue) 9%, var(--tile)); }
+.zone-song-list button.marked { border-color: var(--mint); background: color-mix(in srgb, var(--mint) 14%, var(--tile)); }
+
+/* 물방울 알약 — 우묵한 바탕 위 민트 알약이 고른 칸 밑에 깔리고, 바꾸면 미끄러지며(살짝 넘쳤다 돌아옴) 위아래로 눌렸다 펴진다 */
+.mode-control.single button.drop, .side-toggle button.drop { position: relative; display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; width: 172px; min-width: 0; height: 52px; min-height: 0; padding: 4px; gap: 0; border: 0; border-radius: 16px; background: var(--drop-well); box-shadow: var(--drop-well-shadow); cursor: pointer; }
+.side-toggle button.drop { width: 128px; height: 44px; border-radius: 14px; }
+button.drop i { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 12px; background: var(--drop-pill); box-shadow: var(--drop-glow); transition: transform .38s cubic-bezier(.3, 1.5, .5, 1); }
+.side-toggle button.drop i { border-radius: 10px; }
+button.drop[data-on="1"] i { transform: translateX(100%); }
+button.drop.go[data-on="1"] i { animation: drop-squish-a .38s ease; }
+button.drop.go[data-on="0"] i { animation: drop-squish-b .38s ease; }   /* 이름이 바뀌어야 매번 다시 돈다 */
+@keyframes drop-squish-a { 40% { top: 9px; bottom: 9px; border-radius: 16px; filter: brightness(1.08); } }
+@keyframes drop-squish-b { 40% { top: 9px; bottom: 9px; border-radius: 16px; filter: brightness(1.08); } }
+button.drop span { position: relative; z-index: 1; display: grid; place-items: center; min-width: 0; padding: 0 4px; white-space: nowrap; color: var(--drop-off); font-weight: 800; font-size: 15px; transition: color .25s; }
+.side-toggle button.drop span { font-size: 13px; }
+button.drop[data-on="0"] span:nth-of-type(1), button.drop[data-on="1"] span:nth-of-type(2) { color: var(--drop-on); }
+@media (prefers-reduced-motion: reduce) { button.drop i { transition: none; } button.drop.go i { animation: none !important; } }
+@media (max-width: 400px) { .mode-control.single button.drop { width: 148px; } button.drop span { font-size: 14px; } }   /* 좁은 폰: 프리미엄 하트 여섯 칸과 한 줄 */
+
+/* «?» 먼저 한 장 — 시안 3 · A */
+.help-backdrop { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+.help-sheet { width: min(360px, 100%); padding: 20px 18px 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-2); color: var(--text); box-shadow: 0 24px 70px rgba(0, 0, 0, .45); }
+.help-sheet h2 { margin: 0 0 4px; font-size: 18px; line-height: 1.4; }
+.help-sheet h2 em { color: var(--mint); font-style: normal; }
+.help-sheet ol { margin: 14px 0 16px; padding: 0; list-style: none; display: grid; gap: 9px; }
+.help-sheet li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+.help-sheet li i { flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; background: var(--mint); color: var(--on-mint); font: 900 12px "DM Sans", sans-serif; font-style: normal; display: grid; place-items: center; }
+.help-actions { display: flex; gap: 8px; }
+.help-actions button { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: 11px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; }
+.help-actions button.primary { border-color: var(--mint); background: var(--mint); color: var(--on-mint); }
+
+/* 걸음 창 — 꼬리로 가리키는 곳을 찌름 · 점 진행 표시 · «다음» 하나 + 작은 «닫기» — 시안 3 · B */
+.tour-card { right: auto; margin: 0; max-width: none; }
+.tour-card b { margin-top: 0; }
+.tour-card.tail-up::before, .tour-card.tail-down::before { content: ""; position: absolute; left: calc(var(--tail-x, 40px) - 7px); width: 14px; height: 14px; background: var(--surface-2); transform: rotate(45deg); }
+.tour-card.tail-up::before { top: -8px; border-left: 1px solid var(--mint); border-top: 1px solid var(--mint); }
+.tour-card.tail-down::before { bottom: -8px; border-right: 1px solid var(--mint); border-bottom: 1px solid var(--mint); }
+.tour-actions { align-items: center; }
+.tour-dots { display: flex; gap: 5px; margin-right: auto; }
+.tour-dots i { width: 7px; height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--muted) 40%, transparent); transition: width .2s; }
+.tour-dots i.on { width: 18px; background: var(--mint); }
+.tour-actions button.link { min-height: 40px; padding: 0 8px; border: 0; color: var(--muted); font-size: 13px; font-weight: 600; }
